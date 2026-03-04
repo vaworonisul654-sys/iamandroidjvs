@@ -28,6 +28,7 @@ class JarvisApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => MentorViewModel()..init()),
         ChangeNotifierProvider(create: (_) => TranslatorViewModel()),
+        ChangeNotifierProvider(create: (_) => PhotoViewModel()),
       ],
       child: MaterialApp(
         title: 'J.A.R.V.I.S.',
