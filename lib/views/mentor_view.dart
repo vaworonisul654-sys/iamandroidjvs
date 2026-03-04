@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../utils/design_system.dart';
 import '../utils/keys.dart';
 import '../viewmodels/mentor_view_model.dart';
@@ -222,4 +223,3 @@ class _MentorViewState extends State<MentorView> with SingleTickerProviderStateM
     );
   }
 }
-import 'package:google_fonts/google_fonts.dart';

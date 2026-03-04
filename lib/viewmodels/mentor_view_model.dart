@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../models/learner_profile.dart';
-import 'audio/audio_capture_service.dart';
-import 'network/gemini_live_service.dart';
-import 'tts/tts_service.dart';
-import 'mentor/mentor_service.dart';
+import '../services/audio/audio_capture_service.dart';
+import '../services/network/gemini_live_service.dart';
+import '../services/tts/tts_service.dart';
+import '../services/mentor/mentor_service.dart';
 
 enum MentorState { idle, connecting, active, speaking, error }
 
