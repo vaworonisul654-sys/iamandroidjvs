@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -23,27 +23,12 @@ jobs:
           flutter-version: '3.22.0'
           channel: 'stable'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: 8.0
-
-      - name: Install dependencies
+      - name: Prepare Android Build
         run: |
-          # Diagnostics
-          flutter --version
           SDK_PATH=$(flutter sdk-path)
-          echo "Flutter SDK Path: $SDK_PATH"
-          
-          # Generate Wrapper FIRST (mandatory for bootstrap)
-          cd android
-          gradle wrapper
-          cd ..
-          
-          # Create local.properties with absolute path
           echo "flutter.sdk=$SDK_PATH" > android/local.properties
           
-          # Generate debug keystore for release build signing
+          # Generate debug.keystore for signing
           keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           
           flutter pub get
@@ -53,7 +38,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          flutter build apk --release --split-per-abi --verbose \
+          flutter build apk --release --verbose \
             --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY \
             --dart-define=OPENAI_API_KEY=$OPENAI_API_KEY
 
