@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:ui' as ui;
 import '../utils/design_system.dart';
+import '../viewmodels/photo_view_model.dart';
 import 'translator_view.dart';
 import 'mentor_view.dart';
 import 'memory_view.dart';
+import 'photo_view.dart';
 
 class MainTabNavigator extends StatefulWidget {
   const MainTabNavigator({super.key});
@@ -19,7 +22,10 @@ class _MainTabNavigatorState extends State<MainTabNavigator> {
     const MainTranslatorView(),
     const Center(child: Text("Текст")),  
     const MentorView(),
-    const Center(child: Text("Фото")),   
+    ChangeNotifierProvider(
+      create: (_) => PhotoViewModel(),
+      child: const PhotoView(),
+    ),
     const MemoryView(),
   ];
 
