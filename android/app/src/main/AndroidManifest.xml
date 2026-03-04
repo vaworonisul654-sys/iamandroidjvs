@@ -7,7 +7,7 @@
    <application
         android:label="J.A.R.V.I.S."
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/launch_background">
         <activity
             android:name=".MainActivity"
             android:exported="true"
