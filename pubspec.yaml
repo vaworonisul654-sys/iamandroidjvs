@@ -1,6 +1,6 @@
 name: jarvis_android
 description: J.A.R.V.I.S. - Just A Rather Very Intelligent System (Android Edition)
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
