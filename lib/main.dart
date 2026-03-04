@@ -6,6 +6,7 @@ import 'views/main_tab_navigator.dart';
 import 'viewmodels/mentor_view_model.dart';
 import 'viewmodels/photo_view_model.dart';
 import 'viewmodels/translator_view_model.dart';
+import 'viewmodels/memory_view_model.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,7 @@ class JarvisApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MentorViewModel()..init()),
         ChangeNotifierProvider(create: (_) => TranslatorViewModel()),
         ChangeNotifierProvider(create: (_) => PhotoViewModel()),
+        ChangeNotifierProvider(create: (_) => MemoryViewModel()),
       ],
       child: MaterialApp(
         title: 'J.A.R.V.I.S.',

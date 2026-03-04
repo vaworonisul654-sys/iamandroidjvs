@@ -87,24 +87,30 @@ class Mistake {
   );
 }
 
-class ProfileManager {
+class ProfileManager extends ChangeNotifier {
   static final ProfileManager _instance = ProfileManager._internal();
   factory ProfileManager() => _instance;
   ProfileManager._internal();
 
   late SharedPreferences _prefs;
   LearnerProfile currentProfile = LearnerProfile();
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
 
   Future<void> init() async {
+    if (_isInitialized) return;
     _prefs = await SharedPreferences.getInstance();
     final data = _prefs.getString('jarvis_profile');
     if (data != null) {
       currentProfile = LearnerProfile.fromJson(jsonDecode(data));
     }
+    _isInitialized = true;
+    notifyListeners();
   }
 
   Future<void> save() async {
     await _prefs.setString('jarvis_profile', jsonEncode(currentProfile.toJson()));
+    notifyListeners();
   }
 
   void addMistake(String original, String correction, String explanation) {
@@ -114,9 +120,14 @@ class ProfileManager {
       explanation: explanation,
       date: DateTime.now(),
     ));
-    if (currentProfile.recentMistakes.length > 10) {
+    if (currentProfile.recentMistakes.length > 15) {
       currentProfile.recentMistakes.removeLast();
     }
+    save();
+  }
+
+  void resetProfile() {
+    currentProfile = LearnerProfile();
     save();
   }
 }
