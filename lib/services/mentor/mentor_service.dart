@@ -1,4 +1,4 @@
-import '../models/learner_profile.dart';
+import '../../models/learner_profile.dart';
 
 class MentorService {
   static final MentorService _instance = MentorService._internal();
