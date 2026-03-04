@@ -24,7 +24,9 @@ jobs:
           channel: 'stable'
 
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > local.properties
+          flutter pub get
 
       - name: Build APK
         env:
