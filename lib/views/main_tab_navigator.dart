@@ -104,7 +104,6 @@ class _MainTabNavigatorState extends State<MainTabNavigator> {
   }
 
   Widget _jarvisCentralButton() {
-    bool isSelected = _selectedIndex == 2;
     return GestureDetector(
       onTap: () => _onItemTapped(2),
       child: Transform.translate(

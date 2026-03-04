@@ -73,7 +73,7 @@ class MemoryView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.cpu_outlined, size: 60, color: Colors.white.withOpacity(0.1)),
+          Icon(Icons.memory, size: 60, color: Colors.white.withOpacity(0.1)),
           const SizedBox(height: 16),
           Text(
             "Ваша память пуста",
