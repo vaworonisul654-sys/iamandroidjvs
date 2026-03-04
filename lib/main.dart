@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'utils/design_system.dart';
 import 'views/main_tab_navigator.dart';
 import 'viewmodels/mentor_view_model.dart';
+import 'viewmodels/photo_view_model.dart';
 import 'viewmodels/translator_view_model.dart';
 
 void main() {
