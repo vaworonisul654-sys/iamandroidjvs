@@ -40,7 +40,7 @@ class JarvisApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(
             seedColor: DesignSystem.emerald,
             brightness: Brightness.dark,
-            background: DesignSystem.background,
+            surface: DesignSystem.background,
           ),
           useMaterial3: true,
         ),

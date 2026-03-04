@@ -1,13 +1,12 @@
-import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AudioCaptureService {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
-  final StreamController<List<int>> _audioStreamController = StreamController<List<int>>.broadcast();
+  final StreamController<Uint8List> _audioStreamController = StreamController<Uint8List>.broadcast();
   
-  Stream<List<int>> get audioStream => _audioStreamController.stream;
-  bool _isRecording = false;
+  Stream<Uint8List> get audioStream => _audioStreamController.stream;
 
   Future<void> init() async {
     await _recorder.openRecorder();
@@ -25,12 +24,10 @@ class AudioCaptureService {
       numChannels: 1,
       sampleRate: 16000,
     );
-    _isRecording = true;
   }
 
   Future<void> stopCapture() async {
     await _recorder.stopRecorder();
-    _isRecording = false;
   }
 
   void dispose() {
