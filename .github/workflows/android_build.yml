@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -25,8 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          SDK_PATH=$(flutter sdk-path)
-          echo "flutter.sdk=$SDK_PATH" > android/local.properties
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           flutter pub get
 
       - name: Build APK
