@@ -23,12 +23,22 @@ jobs:
           flutter-version: '3.22.0'
           channel: 'stable'
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.0
+
       - name: Install dependencies
         run: |
           # Diagnostics
           flutter --version
           SDK_PATH=$(flutter sdk-path)
           echo "Flutter SDK Path: $SDK_PATH"
+          
+          # Generate Wrapper FIRST (mandatory for bootstrap)
+          cd android
+          gradle wrapper
+          cd ..
           
           # Create local.properties with absolute path
           echo "flutter.sdk=$SDK_PATH" > android/local.properties
