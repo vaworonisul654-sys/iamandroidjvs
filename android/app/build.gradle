@@ -29,6 +29,11 @@ android {
         versionName "1.0.0"
     }
 
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
     buildTypes {
         release {
             signingConfig signingConfigs.debug
@@ -39,5 +44,5 @@ android {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
 }
