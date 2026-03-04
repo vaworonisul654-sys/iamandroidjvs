@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
+import 'dart:ui' as ui;
 import '../utils/design_system.dart';
 import 'translator_view.dart';
 import 'mentor_view.dart';
@@ -56,7 +56,7 @@ class _MainTabNavigatorState extends State<MainTabNavigator> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(40),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
             height: 72,
             decoration: DesignSystem.glassDecoration(radius: 40),
