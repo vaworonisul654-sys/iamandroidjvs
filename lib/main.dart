@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'utils/design_system.dart';
 import 'views/main_tab_navigator.dart';
 import 'viewmodels/mentor_view_model.dart';
-import 'views/translator_view.dart'; // Using the VM defined inside
+import 'viewmodels/translator_view_model.dart';
+import 'views/translator_view.dart'; 
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

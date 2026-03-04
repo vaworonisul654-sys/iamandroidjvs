@@ -117,24 +117,3 @@ class MainTranslatorView extends StatelessWidget {
     );
   }
 }
-
-// Simplified ViewModel for Demo parity
-class TranslatorViewModel extends ChangeNotifier {
-  bool isRecording = false;
-  List<TranslationItem> history = [];
-
-  void toggleRecording() {
-    isRecording = !isRecording;
-    if (!isRecording) {
-      // Mock translation
-      history.insert(0, TranslationItem(originalText: "Привет, как дела?", translatedText: "Hello, how are you?"));
-    }
-    notifyListeners();
-  }
-}
-
-class TranslationItem {
-  final String originalText;
-  final String translatedText;
-  TranslationItem({required this.originalText, required this.translatedText});
-}
