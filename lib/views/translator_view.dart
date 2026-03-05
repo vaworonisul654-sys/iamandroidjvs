@@ -19,7 +19,7 @@ class MainTranslatorView extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(),
+                _buildHeader(context, viewModel),
                 Expanded(
                   child: _buildTranslationList(viewModel),
                 ),
@@ -33,7 +33,7 @@ class MainTranslatorView extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context, TranslatorViewModel viewModel) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
@@ -43,11 +43,16 @@ class MainTranslatorView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: DesignSystem.glassDecoration(radius: 20),
-            child: const Row(
+            child: Row(
               children: [
-                Text("RU", style: TextStyle(fontWeight: FontWeight.bold)),
-                Icon(Icons.swap_horiz, size: 16, color: DesignSystem.emerald),
-                Text("EN", style: TextStyle(fontWeight: FontWeight.bold)),
+                _buildLanguageLink(context, viewModel, true),
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.swap_horiz, size: 16, color: DesignSystem.emerald),
+                  onPressed: () => viewModel.switchLanguages(),
+                ),
+                _buildLanguageLink(context, viewModel, false),
               ],
             ),
           ),
@@ -57,7 +62,103 @@ class MainTranslatorView extends StatelessWidget {
     );
   }
 
+  Widget _buildLanguageLink(BuildContext context, TranslatorViewModel viewModel, bool isSource) {
+    final lang = isSource ? viewModel.sourceLanguage : viewModel.targetLanguage;
+    return GestureDetector(
+      onTap: () => _showLanguageSelector(context, viewModel, isSource),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Text(
+          lang,
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+        ),
+      ),
+    );
+  }
+
+  void _showLanguageSelector(BuildContext context, TranslatorViewModel viewModel, bool isSource) {
+    final languages = ["RU", "EN", "DE", "FR", "JP", "ES", "IT", "ZH"];
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: DesignSystem.glassDecoration(radius: 30).copyWith(
+          color: DesignSystem.background.withOpacity(0.9),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              isSource ? "ВЫБЕРИТЕ ЯЗЫК ОРИГИНАЛА" : "ВЫБЕРИТЕ ЯЗЫК ПЕРЕВОДА",
+              style: DesignSystem.labelSmall,
+            ),
+            const SizedBox(height: 20),
+            GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+              ),
+              itemCount: languages.length,
+              itemBuilder: (context, index) {
+                final l = languages[index];
+                final isSelected = (isSource ? viewModel.sourceLanguage : viewModel.targetLanguage) == l;
+                return GestureDetector(
+                  onTap: () {
+                    isSource ? viewModel.setSourceLanguage(l) : viewModel.setTargetLanguage(l);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isSelected ? DesignSystem.emerald.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: isSelected ? DesignSystem.emerald : Colors.white10),
+                    ),
+                    child: Text(
+                      l,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? DesignSystem.emerald : Colors.white70,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTranslationList(TranslatorViewModel viewModel) {
+    if (viewModel.history.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.waves, size: 48, color: Colors.white.withOpacity(0.1)),
+            const SizedBox(height: 16),
+            Text(
+              "Говорите, чтобы начать перевод",
+              style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: viewModel.history.length,
@@ -77,6 +178,7 @@ class MainTranslatorView extends StatelessWidget {
           Text(item.originalText, style: const TextStyle(color: Colors.white70, fontSize: 14)),
           const SizedBox(height: 4),
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: DesignSystem.glassDecoration(radius: 16),
             child: Text(
@@ -93,25 +195,43 @@ class MainTranslatorView extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Center(
-        child: GestureDetector(
-          onTap: () => viewModel.toggleRecording(),
-          child: Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: viewModel.isRecording ? Colors.red.withOpacity(0.2) : DesignSystem.emerald.withOpacity(0.1),
-              border: Border.all(
-                color: viewModel.isRecording ? Colors.red : DesignSystem.emerald,
-                width: 2,
+        child: Column(
+          children: [
+            if (viewModel.isRecording)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: Text(
+                  "Слушаю...",
+                  style: TextStyle(color: DesignSystem.emerald, fontWeight: FontWeight.bold),
+                ),
+              ),
+            GestureDetector(
+              onTap: () => viewModel.toggleRecording(),
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: viewModel.isRecording ? Colors.red.withOpacity(0.2) : DesignSystem.emerald.withOpacity(0.1),
+                  border: Border.all(
+                    color: viewModel.isRecording ? Colors.red : DesignSystem.emerald,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    if (viewModel.isRecording)
+                      BoxShadow(color: Colors.red.withOpacity(0.5), blurRadius: 20, spreadRadius: 2)
+                    else
+                      BoxShadow(color: DesignSystem.emerald.withOpacity(0.2), blurRadius: 10, spreadRadius: 1)
+                  ],
+                ),
+                child: Icon(
+                  viewModel.isRecording ? Icons.stop : Icons.mic,
+                  color: viewModel.isRecording ? Colors.red : DesignSystem.emerald,
+                  size: 32,
+                ),
               ),
             ),
-            child: Icon(
-              viewModel.isRecording ? Icons.stop : Icons.mic,
-              color: viewModel.isRecording ? Colors.red : DesignSystem.emerald,
-              size: 32,
-            ),
-          ),
+          ],
         ),
       ),
     );
