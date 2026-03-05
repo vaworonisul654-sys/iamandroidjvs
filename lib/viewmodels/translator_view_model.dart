@@ -35,10 +35,16 @@ class TranslatorViewModel extends ChangeNotifier {
   }
 
   Future<void> toggleRecording() async {
-    if (isRecording) {
-      await _stopAndTranslate();
-    } else {
-      await _startRecording();
+    try {
+      if (isRecording) {
+        await _stopAndTranslate();
+      } else {
+        await _startRecording();
+      }
+    } catch (e) {
+      isRecording = false;
+      notifyListeners();
+      print("Toggle Recording Error: $e");
     }
   }
 
@@ -47,33 +53,44 @@ class TranslatorViewModel extends ChangeNotifier {
     _recordedChunks.clear();
     notifyListeners();
     
-    await _audioCaptureService.init();
-    await _audioCaptureService.startCapture();
-    _audioCaptureService.audioStream.listen((chunk) {
-      if (isRecording) {
-        _recordedChunks.addAll(chunk);
-      }
-    });
+    try {
+      await _audioCaptureService.init();
+      await _audioCaptureService.startCapture();
+      _audioCaptureService.audioStream.listen((chunk) {
+        if (isRecording) {
+          _recordedChunks.addAll(chunk);
+        }
+      });
+    } catch (e) {
+      isRecording = false;
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> _stopAndTranslate() async {
     isRecording = false;
     notifyListeners();
     
-    await _audioCaptureService.stopCapture();
-    
-    if (_recordedChunks.isNotEmpty) {
-      final audioData = Uint8List.fromList(_recordedChunks);
-      final result = await _translationService.translateSpeech(
-        audioData: audioData,
-        sourceLang: sourceLanguage,
-        targetLang: targetLanguage,
-      );
+    try {
+      await _audioCaptureService.stopCapture();
       
-      history.insert(0, TranslationItem(
-        originalText: result.original,
-        translatedText: result.translated,
-      ));
+      if (_recordedChunks.isNotEmpty) {
+        final audioData = Uint8List.fromList(_recordedChunks);
+        final result = await _translationService.translateSpeech(
+          audioData: audioData,
+          sourceLang: sourceLanguage,
+          targetLang: targetLanguage,
+        );
+        
+        history.insert(0, TranslationItem(
+          originalText: result.original,
+          translatedText: result.translated,
+        ));
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Stop and Translate Error: $e");
       notifyListeners();
     }
   }

@@ -207,27 +207,48 @@ class MainTranslatorView extends StatelessWidget {
               ),
             GestureDetector(
               onTap: () => viewModel.toggleRecording(),
+              behavior: HitTestBehavior.opaque,
               child: Container(
-                width: 80,
-                height: 80,
+                width: 100,
+                height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: viewModel.isRecording ? Colors.red.withOpacity(0.2) : DesignSystem.emerald.withOpacity(0.1),
-                  border: Border.all(
-                    color: viewModel.isRecording ? Colors.red : DesignSystem.emerald,
-                    width: 2,
-                  ),
+                  color: viewModel.isRecording 
+                    ? Colors.red.withOpacity(0.05) 
+                    : DesignSystem.emerald.withOpacity(0.05),
                   boxShadow: [
-                    if (viewModel.isRecording)
-                      BoxShadow(color: Colors.red.withOpacity(0.5), blurRadius: 20, spreadRadius: 2)
-                    else
-                      BoxShadow(color: DesignSystem.emerald.withOpacity(0.2), blurRadius: 10, spreadRadius: 1)
+                    BoxShadow(
+                      color: viewModel.isRecording 
+                        ? Colors.red.withOpacity(0.2) 
+                        : DesignSystem.emerald.withOpacity(0.2),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    )
                   ],
                 ),
-                child: Icon(
-                  viewModel.isRecording ? Icons.stop : Icons.mic,
-                  color: viewModel.isRecording ? Colors.red : DesignSystem.emerald,
-                  size: 32,
+                child: Center(
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          (viewModel.isRecording ? Colors.red : DesignSystem.emerald).withOpacity(0.8),
+                          (viewModel.isRecording ? Colors.red : DesignSystem.emerald).withOpacity(0.3),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: (viewModel.isRecording ? Colors.red : DesignSystem.emerald).withOpacity(0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      viewModel.isRecording ? Icons.stop : Icons.mic,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
                 ),
               ),
             ),
