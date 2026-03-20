@@ -77,4 +77,15 @@ class DesignSystem {
       ),
     );
   }
+
+  static BoxDecoration glassDecoration({double radius = 18.0}) {
+    return BoxDecoration(
+      color: glassWhite,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: glassBorder,
+        width: 1.2,
+      ),
+    );
+  }
 }

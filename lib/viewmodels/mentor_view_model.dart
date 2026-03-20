@@ -142,6 +142,10 @@ class MentorViewModel extends ChangeNotifier {
     }
   }
 
+  void refresh() {
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _audioCaptureService.dispose();

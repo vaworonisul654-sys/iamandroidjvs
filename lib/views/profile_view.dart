@@ -122,7 +122,7 @@ class ProfileView extends StatelessWidget {
             title: const Text("Выйти", style: TextStyle(color: Colors.redAccent, fontSize: 14)),
             onTap: () {
               service.logout();
-              context.read<MentorViewModel>().notifyListeners(); // Force UI update
+              context.read<MentorViewModel>().refresh(); // Force UI update
               Navigator.pop(context);
             },
           ),

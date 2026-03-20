@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/photo_view_model.dart';
 import '../utils/design_system.dart';
+import 'profile_view.dart';
 
 class PhotoView extends StatefulWidget {
   const PhotoView({super.key});

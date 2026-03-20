@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/design_system.dart';
 import '../viewmodels/mentor_view_model.dart';
+import 'profile_view.dart';
 
 class MentorView extends StatefulWidget {
   const MentorView({super.key});
