@@ -8,7 +8,7 @@ import 'viewmodels/photo_view_model.dart';
 import 'viewmodels/translator_view_model.dart';
 import 'viewmodels/memory_view_model.dart';
 
-void main() {
+void main() { 
   WidgetsFlutterBinding.ensureInitialized();
   
   // Force dark mode and transparent status bar
