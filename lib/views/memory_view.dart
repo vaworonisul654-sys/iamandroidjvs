@@ -24,7 +24,7 @@ class MemoryView extends StatelessWidget {
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                SliverToBoxAdapter(child: _buildHeader(profile)),
+                SliverToBoxAdapter(child: _buildHeader(context, profile)),
                 SliverToBoxAdapter(child: _buildStatsGrid(profile)),
                 SliverToBoxAdapter(
                   child: Padding(
