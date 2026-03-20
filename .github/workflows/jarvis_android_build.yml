@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -25,13 +25,10 @@ jobs:
 
       - name: Prepare Android Build
         run: |
-          # Dynamically find Flutter SDK path if FLUTTER_ROOT is not set
-          if [ -z "$FLUTTER_ROOT" ]; then
-            export FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
-          fi
+          # Use the SDK path provided by the action
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           
-          # Generate debug.keystore safely
+          # Force create the keystore to avoid any prompt
           if [ ! -f android/app/debug.keystore ]; then
             keytool -genkey -v -keystore android/app/debug.keystore \
               -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
@@ -42,10 +39,7 @@ jobs:
           flutter pub get
 
       - name: Build APK
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: flutter build apk --release --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY" --dart-define=OPENAI_API_KEY="$OPENAI_API_KEY"
+        run: flutter build apk --release -v
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
