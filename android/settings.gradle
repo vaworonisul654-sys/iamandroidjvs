@@ -6,11 +6,15 @@ pluginManagement {
             propertiesFile.withInputStream { properties.load(it) }
         }
         def sdkPath = properties.getProperty("flutter.sdk")
-        if (sdkPath == null) {
+        if (sdkPath == null || sdkPath.trim().isEmpty()) {
             sdkPath = System.getenv("FLUTTER_ROOT")
         }
-        if (sdkPath == null) {
-            throw new RuntimeException("Flutter SDK path not found. Set flutter.sdk in local.properties or FLUTTER_ROOT env var.")
+        if (sdkPath == null || sdkPath.trim().isEmpty()) {
+            // Last resort: try to find it in the environment as 'flutter.sdk' which some CI systems use
+            sdkPath = System.getProperty("flutter.sdk")
+        }
+        if (sdkPath == null || sdkPath.trim().isEmpty()) {
+            throw new RuntimeException("Flutter SDK path not found. Please set flutter.sdk in local.properties or FLUTTER_ROOT environment variable.")
         }
         return sdkPath
     } ()
