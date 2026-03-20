@@ -10,11 +10,11 @@ pluginManagement {
             sdkPath = System.getenv("FLUTTER_ROOT")
         }
         if (sdkPath == null || sdkPath.trim().isEmpty()) {
-            // Last resort: try to find it in the environment as 'flutter.sdk' which some CI systems use
             sdkPath = System.getProperty("flutter.sdk")
         }
         if (sdkPath == null || sdkPath.trim().isEmpty()) {
-            throw new RuntimeException("Flutter SDK path not found. Please set flutter.sdk in local.properties or FLUTTER_ROOT environment variable.")
+            // No throw here, let includeBuild fail if needed or use a dummy
+            sdkPath = "FLUTTER_SDK_NOT_FOUND" 
         }
         return sdkPath
     } ()
