@@ -36,16 +36,15 @@ jobs:
           
           flutter clean
           flutter pub get
-          # Run analyze but don't fail yet if there are minor issues, though we fixed the big one
-          flutter analyze --no-fatal-infos
+          # Skip analyze temporarily to isolate build errors
+          # flutter analyze --no-fatal-infos
 
-      - name: Build APK
+      - name: Build APK (VERBOSE)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          # Use --verbose only for debugging if needed, but release build is usually fine
-          flutter build apk --release \
+          flutter build apk --release --verbose \
             --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY \
             --dart-define=OPENAI_API_KEY=$OPENAI_API_KEY
 
