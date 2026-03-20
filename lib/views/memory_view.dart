@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../utils/design_system.dart';
 import '../viewmodels/memory_view_model.dart';
 import '../models/learner_profile.dart';
+import 'profile_view.dart';
 
 class MemoryView extends StatelessWidget {
   const MemoryView({super.key});

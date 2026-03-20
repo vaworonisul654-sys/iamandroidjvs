@@ -43,17 +43,30 @@ class _PhotoViewState extends State<PhotoView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DesignSystem.glassCard(
-                    radius: 12,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.videocam, color: DesignSystem.emerald, size: 14),
-                        const SizedBox(width: 8),
-                        Text("LIVE ANALYSIS", style: DesignSystem.labelSmall),
-                      ],
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      DesignSystem.glassCard(
+                        radius: 12,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.videocam, color: DesignSystem.emerald, size: 14),
+                            const SizedBox(width: 8),
+                            Text("LIVE ANALYSIS", style: DesignSystem.labelSmall),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileView())),
+                        child: DesignSystem.glassCard(
+                          radius: 50,
+                          padding: const EdgeInsets.all(8),
+                          child: const Icon(Icons.person_outline, color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ],
                   ),
                   const Spacer(),
                   if (viewModel.analysisResult.isNotEmpty)

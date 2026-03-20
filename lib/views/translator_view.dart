@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../utils/design_system.dart';
 import '../viewmodels/translator_view_model.dart';
 import '../models/language.dart';
+import 'profile_view.dart';
 
 class MainTranslatorView extends StatelessWidget {
   const MainTranslatorView({super.key});

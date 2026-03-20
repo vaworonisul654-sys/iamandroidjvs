@@ -77,19 +77,31 @@ class _MentorViewState extends State<MentorView> with SingleTickerProviderStateM
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text("MENTOR", style: DesignSystem.labelSmall),
-          if (viewModel.isActivated)
-            DesignSystem.glassCard(
-              radius: 12,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: const Row(
-                children: [
-                  Icon(Icons.auto_awesome, color: DesignSystem.emerald, size: 14),
-                  SizedBox(width: 8),
-                  Text("ACTIVE", style: TextStyle(color: DesignSystem.emerald, fontSize: 10, fontWeight: FontWeight.bold)),
-                ],
+          Row(
+            children: [
+              if (viewModel.isActivated)
+                DesignSystem.glassCard(
+                  radius: 12,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.auto_awesome, color: DesignSystem.emerald, size: 14),
+                      SizedBox(width: 8),
+                      Text("ACTIVE", style: TextStyle(color: DesignSystem.emerald, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileView())),
+                child: DesignSystem.glassCard(
+                  radius: 50,
+                  padding: const EdgeInsets.all(8),
+                  child: const Icon(Icons.person_outline, color: Colors.white, size: 20),
+                ),
               ),
-            ),
-          const Icon(Icons.settings, color: Colors.white24, size: 20),
+            ],
+          ),
         ],
       ),
     );
