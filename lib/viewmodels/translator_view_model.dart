@@ -1,28 +1,56 @@
 import 'package:flutter/material.dart';
-import 'dart:typed_data';
+import '../models/language.dart';
 import '../services/audio/audio_capture_service.dart';
-import '../services/network/translation_service.dart';
+import '../services/network/gemini_live_service.dart';
 
 class TranslatorViewModel extends ChangeNotifier {
   bool isRecording = false;
   List<TranslationItem> history = [];
-  
+  String currentTranslation = "";
+  String? error;
+
   // Language State
-  String sourceLanguage = "RU";
-  String targetLanguage = "EN";
-  
+  Language sourceLanguage = Language.english;
+  Language targetLanguage = Language.russian;
+
   // Services
   final AudioCaptureService _audioCaptureService = AudioCaptureService();
-  final TranslationService _translationService = TranslationService();
-  
-  List<int> _recordedChunks = [];
+  final GeminiLiveService _geminiLiveService = GeminiLiveService();
 
-  void setSourceLanguage(String lang) {
+  TranslatorViewModel() {
+    _setupGeminiCallbacks();
+  }
+
+  void _setupGeminiCallbacks() {
+    _geminiLiveService.onTranslatedText = (text) {
+      currentTranslation += text;
+      notifyListeners();
+    };
+
+    _geminiLiveService.onTurnComplete = () {
+      if (currentTranslation.isNotEmpty) {
+        history.insert(0, TranslationItem(
+          originalText: "Voice Input", 
+          translatedText: currentTranslation,
+        ));
+        currentTranslation = "";
+        notifyListeners();
+      }
+    };
+
+    _geminiLiveService.onError = (errMsg) {
+      error = errMsg;
+      isRecording = false;
+      notifyListeners();
+    };
+  }
+
+  void setSourceLanguage(Language lang) {
     sourceLanguage = lang;
     notifyListeners();
   }
 
-  void setTargetLanguage(String lang) {
+  void setTargetLanguage(Language lang) {
     targetLanguage = lang;
     notifyListeners();
   }
@@ -35,64 +63,47 @@ class TranslatorViewModel extends ChangeNotifier {
   }
 
   Future<void> toggleRecording() async {
-    try {
-      if (isRecording) {
-        await _stopAndTranslate();
-      } else {
-        await _startRecording();
-      }
-    } catch (e) {
-      isRecording = false;
-      notifyListeners();
-      print("Toggle Recording Error: $e");
+    error = null;
+    if (isRecording) {
+      await _stopSession();
+    } else {
+      await _startSession();
     }
   }
 
-  Future<void> _startRecording() async {
+  Future<void> _startSession() async {
     isRecording = true;
-    _recordedChunks.clear();
+    currentTranslation = "";
     notifyListeners();
-    
+
+    final systemInstruction = "You are J.A.R.V.I.S., a professional translator. Translate everything the user says from ${sourceLanguage.displayName} to ${targetLanguage.displayName}. Output ONLY the translated text. Be concise and natural.";
+
+    _geminiLiveService.startSession(
+      apiKey: "JRV-M7VK-EX4J", 
+      systemInstruction: systemInstruction,
+    );
+
     try {
       await _audioCaptureService.init();
       await _audioCaptureService.startCapture();
       _audioCaptureService.audioStream.listen((chunk) {
-        if (isRecording) {
-          _recordedChunks.addAll(chunk);
+        if (isRecording && _geminiLiveService.isSessionActive) {
+          _geminiLiveService.sendAudioChunk(chunk);
         }
       });
     } catch (e) {
+      error = e.toString();
       isRecording = false;
+      _geminiLiveService.endSession();
       notifyListeners();
-      rethrow;
     }
   }
 
-  Future<void> _stopAndTranslate() async {
+  Future<void> _stopSession() async {
     isRecording = false;
     notifyListeners();
-    
-    try {
-      await _audioCaptureService.stopCapture();
-      
-      if (_recordedChunks.isNotEmpty) {
-        final audioData = Uint8List.fromList(_recordedChunks);
-        final result = await _translationService.translateSpeech(
-          audioData: audioData,
-          sourceLang: sourceLanguage,
-          targetLang: targetLanguage,
-        );
-        
-        history.insert(0, TranslationItem(
-          originalText: result.original,
-          translatedText: result.translated,
-        ));
-        notifyListeners();
-      }
-    } catch (e) {
-      print("Stop and Translate Error: $e");
-      notifyListeners();
-    }
+    await _audioCaptureService.stopCapture();
+    _geminiLiveService.endSession();
   }
 }
 

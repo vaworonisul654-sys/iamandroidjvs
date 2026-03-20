@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/design_system.dart';
 import '../viewmodels/translator_view_model.dart';
+import '../models/language.dart';
 
 class MainTranslatorView extends StatelessWidget {
   const MainTranslatorView({super.key});
@@ -11,6 +12,7 @@ class MainTranslatorView extends StatelessWidget {
     final viewModel = context.watch<TranslatorViewModel>();
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           // Background
@@ -23,6 +25,20 @@ class MainTranslatorView extends StatelessWidget {
                 Expanded(
                   child: _buildTranslationList(viewModel),
                 ),
+                if (viewModel.currentTranslation.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    child: DesignSystem.glassCard(
+                      child: Text(
+                        viewModel.currentTranslation,
+                        style: const TextStyle(
+                          color: DesignSystem.emerald,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
                 _buildActionArea(viewModel),
                 const SizedBox(height: 100), // Tab bar space
               ],
@@ -39,10 +55,12 @@ class MainTranslatorView extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Left side: "ГОЛОС" text
           Text("ГОЛОС", style: DesignSystem.labelSmall),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: DesignSystem.glassDecoration(radius: 20),
+          // Center: Language selection
+          DesignSystem.glassCard(
+            radius: 20,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Row(
               children: [
                 _buildLanguageLink(context, viewModel, true),
@@ -56,7 +74,21 @@ class MainTranslatorView extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.history, color: Colors.white24),
+          // Right side: History and Profile buttons
+          Row(
+            children: [
+              const Icon(Icons.history, color: Colors.white24),
+              const SizedBox(width: 12), // Space between history and profile
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileView())),
+                child: DesignSystem.glassCard(
+                  radius: 50, // Circular shape
+                  padding: const EdgeInsets.all(8),
+                  child: const Icon(Icons.person_outline, color: Colors.white, size: 20),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -68,74 +100,69 @@ class MainTranslatorView extends StatelessWidget {
       onTap: () => _showLanguageSelector(context, viewModel, isSource),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Text(
-          lang,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+        child: Row(
+          children: [
+            Text(lang.flag, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 6),
+            Text(
+              lang.displayName,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+            ),
+          ],
         ),
       ),
     );
   }
 
   void _showLanguageSelector(BuildContext context, TranslatorViewModel viewModel, bool isSource) {
-    final languages = ["RU", "EN", "DE", "FR", "JP", "ES", "IT", "ZH"];
+    final languages = Language.values;
     
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => Container(
-        decoration: DesignSystem.glassDecoration(radius: 30).copyWith(
-          color: DesignSystem.background.withOpacity(0.9),
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: DesignSystem.obsidianBlack.withOpacity(0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          border: const Border(top: BorderSide(color: DesignSystem.glassBorder)),
         ),
-        padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 12),
             Container(
               width: 40,
               height: 4,
               decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
             ),
-            const SizedBox(height: 20),
-            Text(
-              isSource ? "ВЫБЕРИТЕ ЯЗЫК ОРИГИНАЛА" : "ВЫБЕРИТЕ ЯЗЫК ПЕРЕВОДА",
-              style: DesignSystem.labelSmall,
-            ),
-            const SizedBox(height: 20),
-            GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                isSource ? "ЯЗЫК ОРИГИНАЛА" : "ЯЗЫК ПЕРЕВОДА",
+                style: DesignSystem.labelSmall,
               ),
-              itemCount: languages.length,
-              itemBuilder: (context, index) {
-                final l = languages[index];
-                final isSelected = (isSource ? viewModel.sourceLanguage : viewModel.targetLanguage) == l;
-                return GestureDetector(
-                  onTap: () {
-                    isSource ? viewModel.setSourceLanguage(l) : viewModel.setTargetLanguage(l);
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isSelected ? DesignSystem.emerald.withOpacity(0.2) : Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: isSelected ? DesignSystem.emerald : Colors.white10),
-                    ),
-                    child: Text(
-                      l,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? DesignSystem.emerald : Colors.white70,
-                      ),
-                    ),
-                  ),
-                );
-              },
             ),
-            const SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: languages.length,
+                itemBuilder: (context, index) {
+                  final l = languages[index];
+                  final isSelected = (isSource ? viewModel.sourceLanguage : viewModel.targetLanguage) == l;
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                    leading: Text(l.flag, style: const TextStyle(fontSize: 24)),
+                    title: Text(l.displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    subtitle: Text(l.nameInRussian, style: TextStyle(color: Colors.white.withOpacity(0.4))),
+                    trailing: isSelected ? const Icon(Icons.check, color: DesignSystem.emerald) : null,
+                    onTap: () {
+                      isSource ? viewModel.setSourceLanguage(l) : viewModel.setTargetLanguage(l);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -148,11 +175,11 @@ class MainTranslatorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.waves, size: 48, color: Colors.white.withOpacity(0.1)),
+            const Icon(Icons.mic_none, size: 48, color: Colors.white10),
             const SizedBox(height: 16),
             Text(
-              "Говорите, чтобы начать перевод",
-              style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
+              "Говорите для перевода",
+              style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 14),
             ),
           ],
         ),
@@ -160,6 +187,7 @@ class MainTranslatorView extends StatelessWidget {
     }
 
     return ListView.builder(
+      reverse: false,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: viewModel.history.length,
       itemBuilder: (context, index) {
@@ -171,19 +199,25 @@ class MainTranslatorView extends StatelessWidget {
 
   Widget _buildChatBubble(TranslationItem item) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(item.originalText, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-          const SizedBox(height: 4),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: DesignSystem.glassDecoration(radius: 16),
-            child: Text(
-              item.translatedText,
-              style: const TextStyle(color: DesignSystem.emerald, fontSize: 18, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              const SizedBox(width: 4),
+              Text(item.originalText, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          DesignSystem.glassCard(
+            radius: 20,
+            child: SizedBox(
+              width: double.infinity,
+              child: Text(
+                item.translatedText,
+                style: const TextStyle(color: Colors.white, fontSize: 17, height: 1.3),
+              ),
             ),
           ),
         ],
@@ -197,58 +231,26 @@ class MainTranslatorView extends StatelessWidget {
       child: Center(
         child: Column(
           children: [
-            if (viewModel.isRecording)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: Text(
-                  "Слушаю...",
-                  style: TextStyle(color: DesignSystem.emerald, fontWeight: FontWeight.bold),
-                ),
-              ),
             GestureDetector(
               onTap: () => viewModel.toggleRecording(),
-              behavior: HitTestBehavior.opaque,
               child: Container(
-                width: 100,
-                height: 100,
+                width: 90,
+                height: 90,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: viewModel.isRecording 
-                    ? Colors.red.withOpacity(0.05) 
-                    : DesignSystem.emerald.withOpacity(0.05),
+                  gradient: DesignSystem.emeraldGradient,
                   boxShadow: [
                     BoxShadow(
-                      color: viewModel.isRecording 
-                        ? Colors.red.withOpacity(0.2) 
-                        : DesignSystem.emerald.withOpacity(0.2),
-                      blurRadius: 20,
-                      spreadRadius: 2,
+                      color: DesignSystem.emerald.withOpacity(viewModel.isRecording ? 0.4 : 0.2),
+                      blurRadius: 25,
+                      spreadRadius: 5,
                     )
                   ],
                 ),
-                child: Center(
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          (viewModel.isRecording ? Colors.red : DesignSystem.emerald).withOpacity(0.8),
-                          (viewModel.isRecording ? Colors.red : DesignSystem.emerald).withOpacity(0.3),
-                        ],
-                      ),
-                      border: Border.all(
-                        color: (viewModel.isRecording ? Colors.red : DesignSystem.emerald).withOpacity(0.5),
-                        width: 2,
-                      ),
-                    ),
-                    child: Icon(
-                      viewModel.isRecording ? Icons.stop : Icons.mic,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
+                child: Icon(
+                  viewModel.isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                  color: Colors.white,
+                  size: 38,
                 ),
               ),
             ),

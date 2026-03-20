@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../utils/design_system.dart';
-import '../utils/keys.dart';
 import '../viewmodels/mentor_view_model.dart';
 
 class MentorView extends StatefulWidget {
@@ -13,20 +11,26 @@ class MentorView extends StatefulWidget {
 }
 
 class _MentorViewState extends State<MentorView> with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
+  late AnimationController _orbController;
+  final TextEditingController _keyController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
+    _orbController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MentorViewModel>().init();
+    });
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _orbController.dispose();
+    _keyController.dispose();
     super.dispose();
   }
 
@@ -35,66 +39,29 @@ class _MentorViewState extends State<MentorView> with SingleTickerProviderStateM
     final viewModel = context.watch<MentorViewModel>();
     
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Background Glow
-          Positioned(
-            bottom: -100,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: DesignSystem.emerald.withOpacity(0.05),
-              ),
-            ),
-          ),
+          // Background Gradient
+          Container(decoration: const BoxDecoration(gradient: DesignSystem.mainGradient)),
 
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(context),
-                const SizedBox(height: 20),
-                const Text(
-                  "JARVIS CORE",
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: Color(0x8000E08E),
-                  ),
-                ),
-                const Spacer(),
+                _buildHeader(viewModel),
                 
-                // Central Visualizer
-                _buildCoreVisualizer(viewModel),
-                
-                const Spacer(),
-                
-                // Response Text
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Container(
-                    height: 120,
-                    alignment: Alignment.center,
-                    child: Text(
-                      viewModel.currentResponse.isNotEmpty 
-                        ? viewModel.currentResponse 
-                        : (viewModel.state == MentorState.idle 
-                            ? "Нажмите на ядро, чтобы начать урок" 
-                            : "Я слушаю..."),
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 100), // Bottom Tab Bar padding
+                if (!viewModel.isActivated)
+                  Expanded(child: _buildLockedState(viewModel))
+                else ...[
+                  const Spacer(),
+                  const Text("JARVIS CORE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 4, color: DesignSystem.emerald)),
+                  const Spacer(),
+                  _buildOrb(viewModel),
+                  const Spacer(),
+                  _buildResponseText(viewModel),
+                  const Spacer(),
+                  const SizedBox(height: 100),
+                ],
               ],
             ),
           ),
@@ -103,122 +70,162 @@ class _MentorViewState extends State<MentorView> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(MentorViewModel viewModel) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.all(20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.close_rounded, color: Colors.white30, size: 28),
-          ),
-          
-          // Dashboard Button
-          Container(
-             decoration: DesignSystem.glassDecoration(radius: 12),
-             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-             child: const Row(
-               mainAxisSize: MainAxisSize.min,
-               children: [
-                 Icon(Icons.bar_chart, color: DesignSystem.emerald, size: 14),
-                 SizedBox(width: 8),
-                 Text(
-                   "ИТОГИ",
-                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: DesignSystem.emerald),
-                 ),
-               ],
-             ),
-          ),
+          Text("MENTOR", style: DesignSystem.labelSmall),
+          if (viewModel.isActivated)
+            DesignSystem.glassCard(
+              radius: 12,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: const Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: DesignSystem.emerald, size: 14),
+                  SizedBox(width: 8),
+                  Text("ACTIVE", style: TextStyle(color: DesignSystem.emerald, fontSize: 10, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          const Icon(Icons.settings, color: Colors.white24, size: 20),
+        ],
+      ),
+    );
+  }
 
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.settings, color: Colors.white30, size: 24),
+  Widget _buildLockedState(MentorViewModel viewModel) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: DesignSystem.glassCard(
+          radius: 24,
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.lock_outline, color: DesignSystem.emerald, size: 48),
+              const SizedBox(height: 24),
+              const Text(
+                "Jarvis Core Заблокирован",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Для активации AI-наставника введите ваш лицензионный ключ.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () => _showActivationDialog(viewModel),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignSystem.emerald,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text("АКТИВИРОВАТЬ", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showActivationDialog(MentorViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: DesignSystem.obsidianBlack,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), border: Border.all(color: DesignSystem.glassBorder)),
+        title: const Text("Активация", style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: _keyController,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "JRV-XXXX-XXXX",
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: DesignSystem.emerald)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Отмена", style: TextStyle(color: Colors.white24)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final success = await viewModel.activate(_keyController.text);
+              if (success && mounted) Navigator.pop(context);
+            },
+            child: const Text("ОК", style: TextStyle(color: DesignSystem.emerald)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCoreVisualizer(MentorViewModel viewModel) {
+  Widget _buildOrb(MentorViewModel viewModel) {
     bool isActive = viewModel.state != MentorState.idle;
-    
     return GestureDetector(
-      onTap: () {
-        if (isActive) {
-          viewModel.stopSession();
-        } else {
-          viewModel.startSession(APIKeys.geminiApiKey); 
-        }
-      },
+      onTap: () => isActive ? viewModel.stopSession() : viewModel.startSession(),
       child: AnimatedBuilder(
-        animation: _pulseController,
+        animation: _orbController,
         builder: (context, child) {
-          double pulse = isActive ? (1.0 + _pulseController.value * 0.1) : 1.0;
-          return Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Pulse Rings
-                if (isActive)
-                  ...List.generate(3, (index) {
-                    double scale = 1.0 + (index * 0.4) + (_pulseController.value * 0.2);
-                    return Opacity(
-                      opacity: (1.0 - _pulseController.value) * 0.2,
-                      child: Container(
-                        width: 140 * scale,
-                        height: 140 * scale,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: DesignSystem.emerald, width: 1),
-                        ),
-                      ),
-                    );
-                  }),
-                
-                // Main Core
-                Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: DesignSystem.emerald.withOpacity(0.15),
-                        blurRadius: 20,
-                      )
-                    ],
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            DesignSystem.emerald.withOpacity(0.8),
-                            DesignSystem.emerald.withOpacity(0.3),
-                          ],
-                        ),
-                        border: Border.all(color: DesignSystem.emerald.withOpacity(0.5), width: 2),
-                      ),
-                      child: Transform.scale(
-                        scale: pulse,
-                        child: const Icon(
-                          Icons.psychology,
-                          color: Colors.white,
-                          size: 48,
-                          shadows: [Shadow(color: Colors.white, blurRadius: 10)],
-                        ),
-                      ),
-                    ),
-                  ),
+          return Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  DesignSystem.emerald.withOpacity(isActive ? 0.3 + (_orbController.value * 0.2) : 0.1),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: Center(
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: DesignSystem.emeraldGradient,
+                  boxShadow: [
+                    BoxShadow(
+                      color: DesignSystem.emerald.withOpacity(isActive ? 0.5 : 0.2),
+                      blurRadius: isActive ? 30 + (_orbController.value * 20) : 10,
+                      spreadRadius: isActive ? 5 : 0,
+                    )
+                  ],
                 ),
-              ],
+                child: const Icon(Icons.psychology, color: Colors.white, size: 48),
+              ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildResponseText(MentorViewModel viewModel) {
+    String text = "Нажмите на ядро, чтобы начать";
+    if (viewModel.state == MentorState.connecting) text = "Подключение...";
+    if (viewModel.state == MentorState.active) text = "Я слушаю...";
+    if (viewModel.currentResponse.isNotEmpty) text = viewModel.currentResponse;
+    if (viewModel.errorMessage != null) text = viewModel.errorMessage!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white, fontSize: 18, height: 1.4),
       ),
     );
   }

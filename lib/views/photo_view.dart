@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
-import 'dart:ui' as ui;
 import '../viewmodels/photo_view_model.dart';
 import '../utils/design_system.dart';
 
@@ -35,36 +34,41 @@ class _PhotoViewState extends State<PhotoView> {
               child: CameraPreview(viewModel.controller!),
             )
           else
-            const Center(child: CircularProgressIndicator(color: DesignSystem.emerald)),
+            Container(color: DesignSystem.obsidianBlack),
 
-          // Targeting Overlay
-          _buildTargetingOverlay(),
-
-          // Top Info Bar
-          Positioned(
-            top: 60,
-            left: 20,
-            child: _buildGlassInfo("РЕЖИМ ВИЗУАЛЬНОГО АНАЛИЗА"),
-          ),
-
-          // Analysis Result Card
-          if (viewModel.analysisResult.isNotEmpty)
-            Positioned(
-              bottom: 120,
-              left: 20,
-              right: 20,
-              child: _buildResultCard(viewModel),
+          // HUD Overlay
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DesignSystem.glassCard(
+                    radius: 12,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.videocam, color: DesignSystem.emerald, size: 14),
+                        const SizedBox(width: 8),
+                        Text("LIVE ANALYSIS", style: DesignSystem.labelSmall),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  if (viewModel.analysisResult.isNotEmpty)
+                    _buildResultCard(viewModel),
+                  const SizedBox(height: 24),
+                  _buildControls(viewModel),
+                  const SizedBox(height: 100), // Tab bar space
+                ],
+              ),
             ),
-
-          // Capture Button
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: _buildCaptureButton(viewModel),
-            ),
           ),
+          
+          // Targeting frames
+          if (viewModel.analysisResult.isEmpty)
+             _buildTargetingOverlay(),
         ],
       ),
     );
@@ -73,11 +77,11 @@ class _PhotoViewState extends State<PhotoView> {
   Widget _buildTargetingOverlay() {
     return Center(
       child: Container(
-        width: 250,
-        height: 250,
+        width: 280,
+        height: 280,
         decoration: BoxDecoration(
-          border: Border.all(color: DesignSystem.emerald.withOpacity(0.3), width: 1),
-          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white10, width: 1),
+          borderRadius: BorderRadius.circular(30),
         ),
         child: Stack(
           children: [
@@ -95,34 +99,14 @@ class _PhotoViewState extends State<PhotoView> {
     return Align(
       alignment: alignment,
       child: Container(
-        width: 30,
-        height: 30,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           border: Border(
-            top: alignment.y < 0 ? const BorderSide(color: DesignSystem.emerald, width: 3) : BorderSide.none,
-            left: alignment.x < 0 ? const BorderSide(color: DesignSystem.emerald, width: 3) : BorderSide.none,
-            bottom: alignment.y > 0 ? const BorderSide(color: DesignSystem.emerald, width: 3) : BorderSide.none,
-            right: alignment.x > 0 ? const BorderSide(color: DesignSystem.emerald, width: 3) : BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGlassInfo(String text) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
-          ),
-          child: Text(
-            text,
-            style: const TextStyle(color: DesignSystem.emerald, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+            top: alignment.y < 0 ? const BorderSide(color: DesignSystem.emerald, width: 4) : BorderSide.none,
+            left: alignment.x < 0 ? const BorderSide(color: DesignSystem.emerald, width: 4) : BorderSide.none,
+            bottom: alignment.y > 0 ? const BorderSide(color: DesignSystem.emerald, width: 4) : BorderSide.none,
+            right: alignment.x > 0 ? const BorderSide(color: DesignSystem.emerald, width: 4) : BorderSide.none,
           ),
         ),
       ),
@@ -130,67 +114,83 @@ class _PhotoViewState extends State<PhotoView> {
   }
 
   Widget _buildResultCard(PhotoViewModel viewModel) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(25),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: DesignSystem.glassDecoration(radius: 25),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+    return DesignSystem.glassCard(
+      radius: 24,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.psychology, color: DesignSystem.emerald, size: 20),
-                  const SizedBox(width: 8),
-                  Text("АНАЛИЗ J.A.R.V.I.S.", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                    onPressed: () => viewModel.reset(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                viewModel.analysisResult,
-                style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+              const Icon(Icons.auto_awesome, color: DesignSystem.emerald, size: 18),
+              const SizedBox(width: 8),
+              Text("J.A.R.V.I.S. VISION", style: DesignSystem.labelSmall),
+              const Spacer(),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close, color: Colors.white24, size: 20),
+                onPressed: () => viewModel.reset(),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+          Text(
+            viewModel.analysisResult,
+            style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.4),
+          ),
+        ],
       ),
     );
   }
 
-  @override
-  void dispose() {
-    // Controller is disposed in ViewModel
-    super.dispose();
+  Widget _buildControls(PhotoViewModel viewModel) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildSideButton(
+          icon: Icons.photo_library_rounded,
+          onTap: () => viewModel.pickFromGallery(),
+        ),
+        _buildCaptureButton(viewModel),
+        _buildSideButton(
+          icon: Icons.flash_on_rounded, // Placeholder for flash toggle
+          onTap: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSideButton({required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: DesignSystem.glassCard(
+        radius: 50,
+        padding: const EdgeInsets.all(12),
+        child: Icon(icon, color: Colors.white, size: 24),
+      ),
+    );
   }
 
   Widget _buildCaptureButton(PhotoViewModel viewModel) {
     return GestureDetector(
       onTap: () => viewModel.captureAndAnalyze(),
       child: Container(
-        width: 80,
-        height: 80,
+        width: 84,
+        height: 84,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 4),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(6),
           child: Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: viewModel.isAnalyzing ? DesignSystem.emerald : Colors.white.withOpacity(0.8),
+              color: Colors.white,
             ),
             child: viewModel.isAnalyzing
-                ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                : null,
+                ? const Center(child: CircularProgressIndicator(color: DesignSystem.emerald, strokeWidth: 3))
+                : const Icon(Icons.camera_alt, color: Colors.black, size: 32),
           ),
         ),
       ),

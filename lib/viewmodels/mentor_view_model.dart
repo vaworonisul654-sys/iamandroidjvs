@@ -1,7 +1,9 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../models/learner_profile.dart';
 import '../services/audio/audio_capture_service.dart';
 import '../services/network/gemini_live_service.dart';
+import '../services/network/license_service.dart';
 import '../services/tts/tts_service.dart';
 import '../services/mentor/mentor_service.dart';
 
@@ -11,6 +13,7 @@ class MentorViewModel extends ChangeNotifier {
   MentorState _state = MentorState.idle;
   String _currentResponse = "";
   double _audioLevel = 0;
+  String? _errorMessage;
   
   // Services
   final GeminiLiveService _geminiService = GeminiLiveService();
@@ -18,10 +21,13 @@ class MentorViewModel extends ChangeNotifier {
   final TTSService _ttsService = TTSService();
   final MentorService _mentorService = MentorService();
   final ProfileManager _profileManager = ProfileManager();
+  final LicenseService _licenseService = LicenseService();
 
   MentorState get state => _state;
   String get currentResponse => _currentResponse;
   double get audioLevel => _audioLevel;
+  String? get errorMessage => _errorMessage;
+  bool get isActivated => _licenseService.isActivated;
 
   MentorViewModel() {
     _setupCallbacks();
@@ -31,6 +37,8 @@ class MentorViewModel extends ChangeNotifier {
     await _profileManager.init();
     await _audioCaptureService.init();
     await _ttsService.init();
+    await _licenseService.init();
+    notifyListeners();
   }
 
   void _setupCallbacks() {
@@ -60,20 +68,35 @@ class MentorViewModel extends ChangeNotifier {
     };
 
     _geminiService.onError = (err) {
+      _errorMessage = err;
       _state = MentorState.error;
       notifyListeners();
     };
   }
 
-  Future<void> startSession(String apiKey) async {
+  Future<bool> activate(String key) async {
+    final success = await _licenseService.checkStatus(key);
+    notifyListeners();
+    return success;
+  }
+
+  Future<void> startSession() async {
+    if (!isActivated) {
+      _errorMessage = "Требуется активация в Личном Кабинете";
+      notifyListeners();
+      return;
+    }
+
     _state = MentorState.connecting;
+    _errorMessage = null;
     notifyListeners();
 
     try {
+      final key = _licenseService.currentKey!;
       final instruction = _mentorService.getSystemInstruction(_profileManager.currentProfile);
       
       _geminiService.startSession(
-        apiKey: apiKey,
+        apiKey: key,
         systemInstruction: instruction,
       );
 
@@ -86,6 +109,7 @@ class MentorViewModel extends ChangeNotifier {
       });
 
     } catch (e) {
+      _errorMessage = e.toString();
       _state = MentorState.error;
       notifyListeners();
     }

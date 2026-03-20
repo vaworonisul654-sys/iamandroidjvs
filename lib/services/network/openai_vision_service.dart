@@ -1,16 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import '../../utils/keys.dart';
 
 class OpenAIVisionService {
-  static const String _baseUrl = "https://api.openai.com/v1/chat/completions";
+  static const String _proxyUrl = "http://95.163.236.215:8000/v1/proxy/vision";
 
   Future<String> analyzeImage(File imageFile) async {
-    final apiKey = APIKeys.openAiApiKey;
-    if (apiKey == "YOUR_OPENAI_API_KEY_HERE") {
-      return "Ошибка: API ключ OpenAI не настроен.";
-    }
+    const licenseKey = "JRV-M7VK-EX4J"; // Default testing key
 
     final bytes = await imageFile.readAsBytes();
     final base64Image = base64Encode(bytes);
@@ -23,7 +19,7 @@ class OpenAIVisionService {
           "content": [
             {
               "type": "text", 
-              "text": "Ты — J.A.R.V.I.S. Опиши кратко, что ты видишь на этом фото, и дай полезный совет или инсайт на русском языке. Будь краток и профессионален."
+              "text": "Ты — J.A.R.V.I.S., эксперт-лингвист. Опиши кратко, что изображено на фото, и переведи любой текст на нем на русский язык. Будь лаконичен и профессионален."
             },
             {
               "type": "image_url",
@@ -34,15 +30,15 @@ class OpenAIVisionService {
           ]
         }
       ],
-      "max_tokens": 300
+      "max_tokens": 500
     };
 
     try {
       final response = await http.post(
-        Uri.parse(_baseUrl),
+        Uri.parse(_proxyUrl),
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer $apiKey",
+          "x-license-key": licenseKey,
         },
         body: jsonEncode(payload),
       );
@@ -51,10 +47,10 @@ class OpenAIVisionService {
         final data = jsonDecode(response.body);
         return data["choices"][0]["message"]["content"];
       } else {
-        return "Ошибка API: ${response.statusCode} - ${response.body}";
+        return "Ошибка: ${response.statusCode} - ${response.body}";
       }
     } catch (e) {
-      return "Ошибка сети: $e";
+      return "Сетевая ошибка: $e";
     }
   }
 }

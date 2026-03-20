@@ -13,8 +13,8 @@ class GeminiLiveService {
   Function(String)? onError;
   Function()? onSetupComplete;
 
-  static const String _host = "generativelanguage.googleapis.com";
-  static const String _version = "v1alpha";
+  // Proxy Configuration (Must match VPS)
+  static const String _proxyUrl = "ws://95.163.236.215:8000/v1/proxy/gemini/ws";
   
   bool get isSessionActive => _isSessionActive;
 
@@ -23,7 +23,8 @@ class GeminiLiveService {
     required String systemInstruction,
     String model = "models/gemini-2.0-flash-exp",
   }) {
-    final url = "wss://$_host/ws/google.ai.generativelanguage.$_version.GenerativeService.BidiGenerateContent?key=$apiKey";
+    // Connect to our Proxy with the License Key
+    final url = "$_proxyUrl?key=$apiKey";
     
     try {
       _channel = WebSocketChannel.connect(Uri.parse(url));
@@ -92,6 +93,12 @@ class GeminiLiveService {
     _channel!.stream.listen((message) {
       final data = jsonDecode(message);
       
+      // Handle Proxy Errors (e.g., 4003 Invalid Key)
+      if (data["error"] != null) {
+        onError?.call(data["error"]);
+        return;
+      }
+
       if (data["setup_complete"] != null) {
         onSetupComplete?.call();
       }
