@@ -64,28 +64,13 @@ jobs:
         run: |
           # Use tee to see real-time console progress while capturing build_logs.txt
           flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
-
-      - name: Publish Logs to Git Branch
-        if: failure() || success()
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b debug/build-logs || git checkout debug/build-logs
-          cp build_logs.txt build_logs.txt || echo "No logs to copy"
-          git add build_logs.txt || echo "Nothing to add"
-          git commit -m "debug: SDK-native build logs run #27 $(date)" || echo "Nothing to commit"
-          git push origin debug/build-logs --force
-
-      - name: Upload Logs on Failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: build_logs.txt
+          
+          # Force capture the APK
+          find . -name "app-release.apk" -exec cp {} ./app-release.apk \;
 
       - name: Upload APK on Success
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: jarvis-android-release
-          path: "**/app-release.apk"
+          path: app-release.apk
