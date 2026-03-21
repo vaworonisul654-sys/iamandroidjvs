@@ -23,8 +23,10 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          # Rollback to 3.19.6 to avoid 3.22.0 Kotlin template bugs
+          flutter-version: '3.19.6'
           channel: 'stable'
+          cache: true
 
       - name: System Diagnostics
         run: |
@@ -99,7 +101,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #37 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #39 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
