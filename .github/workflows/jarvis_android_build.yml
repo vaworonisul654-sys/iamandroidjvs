@@ -56,8 +56,10 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --release -v
+      - name: Build APK (Direct Gradle)
+        run: |
+          cd android
+          ./gradlew assembleRelease --stacktrace --info
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
