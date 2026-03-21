@@ -62,19 +62,18 @@ jobs:
           cd android
           ./gradlew assembleRelease --stacktrace --info > build_logs.txt 2>&1 || (echo "FAILED=true" >> $GITHUB_ENV && exit 1)
 
-      - name: Publish Logs to Summary
+      - name: Publish Logs to Public Link
         if: failure()
         run: |
           echo "### ❌ Build Failure Details" >> $GITHUB_STEP_SUMMARY
           if [ -f android/build_logs.txt ]; then
+            URL=$(curl -s --data-binary @android/build_logs.txt https://paste.rs)
+            echo "#### 🔗 Full Build Log: $URL" >> $GITHUB_STEP_SUMMARY
+            echo "The logs are also available in the 'build-logs' artifact." >> $GITHUB_STEP_SUMMARY
+            
             echo '#### 🔍 Key Error Messages' >> $GITHUB_STEP_SUMMARY
             echo '```text' >> $GITHUB_STEP_SUMMARY
-            grep -iE "error:|failed:|exception:|caused by:" android/build_logs.txt | head -n 50 >> $GITHUB_STEP_SUMMARY || echo "No specific errors found in grep." >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            
-            echo '#### 📝 Log Tail (Last 100 lines)' >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 100 android/build_logs.txt >> $GITHUB_STEP_SUMMARY
+            grep -iE "error:|failed:|exception:|caused by:" android/build_logs.txt | head -n 50 >> $GITHUB_STEP_SUMMARY || echo "No specific errors found." >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           else
             echo "build_logs.txt not found." >> $GITHUB_STEP_SUMMARY
