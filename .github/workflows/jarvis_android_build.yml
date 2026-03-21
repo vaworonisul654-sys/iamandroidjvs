@@ -59,11 +59,14 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Direct Gradle)
+      - name: Build APK (SDK Native)
         id: build_apk
         run: |
-          cd android
-          ./gradlew assembleRelease --stacktrace --info > build_logs.txt 2>&1 || (echo "FAILED=true" >> $GITHUB_ENV && exit 1)
+          # Sanitize package structure if redundant files exist
+          rm -rf android/app/src/main/kotlin/com/jarvis/iamandroidjvs || echo "Clean"
+          
+          # Build with verbose logging
+          flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols > build_logs.txt 2>&1 || (echo "FAILED=true" >> $GITHUB_ENV && exit 1)
 
       - name: Publish Logs to Git Branch
         if: failure() || success()
@@ -71,9 +74,9 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b debug/build-logs || git checkout debug/build-logs
-          cp android/build_logs.txt build_logs.txt || echo "No logs to copy"
+          cp build_logs.txt build_logs.txt || echo "No logs to copy"
           git add build_logs.txt || echo "Nothing to add"
-          git commit -m "debug: build logs from run #26 $(date)" || echo "Nothing to commit"
+          git commit -m "debug: SDK-native build logs run #27 $(date)" || echo "Nothing to commit"
           git push origin debug/build-logs --force
 
       - name: Upload Logs on Failure
