@@ -7,7 +7,6 @@
     
    <application
         android:label="J.A.R.V.I.S."
-        android:name="io.flutter.app.FlutterApplication"
         android:icon="@android:drawable/ic_menu_edit">
         <activity
             android:name=".MainActivity"
