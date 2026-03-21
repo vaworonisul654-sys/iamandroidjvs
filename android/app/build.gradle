@@ -58,5 +58,6 @@ flutter {
 }
 
 dependencies {
-    // Standard Flutter dependencies are injected automatically
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
+    // The Flutter plugin should handle this, but we'll be explicit as a safeguard
 }

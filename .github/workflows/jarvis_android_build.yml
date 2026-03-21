@@ -62,11 +62,8 @@ jobs:
       - name: Build APK (SDK Native)
         id: build_apk
         run: |
-          # Sanitize package structure if redundant files exist
-          rm -rf android/app/src/main/kotlin/com/jarvis/iamandroidjvs || echo "Clean"
-          
-          # Build with verbose logging
-          flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols > build_logs.txt 2>&1 || (echo "FAILED=true" >> $GITHUB_ENV && exit 1)
+          # Use tee to see real-time console progress while capturing build_logs.txt
+          flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
 
       - name: Publish Logs to Git Branch
         if: failure() || success()
