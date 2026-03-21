@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -23,20 +23,24 @@ jobs:
           flutter-version: '3.22.0'
           channel: 'stable'
 
+      - name: System Diagnostics
+        run: |
+          flutter doctor -v
+          ls -la
+          
       - name: Surgical Android Platform Restoration
         run: |
-          # Back up our modernized files
+          # Back up modernized scripts
           cp android/settings.gradle settings.gradle.bak
           cp android/app/build.gradle build.gradle.bak
           
-          # Re-generate platform files (this restores gradlew and wrapper)
+          # Restore missing files
           flutter create --platforms=android .
           
-          # Restore our modernized files
+          # Restore optimized scripts
           mv settings.gradle.bak android/settings.gradle
           mv build.gradle.bak android/app/build.gradle
           
-          # Ensure gradlew is executable
           chmod +x android/gradlew
 
       - name: Prepare Android Build
@@ -53,7 +57,7 @@ jobs:
           flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release -v
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
