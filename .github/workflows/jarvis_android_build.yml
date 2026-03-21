@@ -59,9 +59,17 @@ jobs:
       - name: Build APK (Direct Gradle)
         run: |
           cd android
-          ./gradlew assembleRelease --stacktrace --info
+          ./gradlew assembleRelease --stacktrace --info > build_logs.txt 2>&1 || (cat build_logs.txt && exit 1)
+
+      - name: Upload Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: android/build_logs.txt
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: jarvis-android-apk
