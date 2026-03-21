@@ -62,22 +62,21 @@ jobs:
           cd android
           ./gradlew assembleRelease --stacktrace --info > build_logs.txt 2>&1 || (echo "FAILED=true" >> $GITHUB_ENV && exit 1)
 
-      - name: Publish Logs to Public Link
+      - name: Publish Logs to Git Branch
         if: failure()
         run: |
-          echo "### ❌ Build Failure Details" >> $GITHUB_STEP_SUMMARY
-          if [ -f android/build_logs.txt ]; then
-            URL=$(curl -s --data-binary @android/build_logs.txt https://paste.rs)
-            echo "#### 🔗 Full Build Log: $URL" >> $GITHUB_STEP_SUMMARY
-            echo "The logs are also available in the 'build-logs' artifact." >> $GITHUB_STEP_SUMMARY
-            
-            echo '#### 🔍 Key Error Messages' >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            grep -iE "error:|failed:|exception:|caused by:" android/build_logs.txt | head -n 50 >> $GITHUB_STEP_SUMMARY || echo "No specific errors found." >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "build_logs.txt not found." >> $GITHUB_STEP_SUMMARY
-          fi
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create branch and add log
+          cp android/build_logs.txt build_logs.txt
+          git checkout -b debug/build-logs || git checkout debug/build-logs
+          git add build_logs.txt
+          git commit -m "debug: build failure logs $(date)"
+          git push origin debug/build-logs --force
+          
+          echo "### ❌ Build Failure Logs Pushed" >> $GITHUB_STEP_SUMMARY
+          echo "Logs are available on branch: \`debug/build-logs\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Logs on Failure
         if: failure()
