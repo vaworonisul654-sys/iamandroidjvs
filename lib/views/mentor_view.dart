@@ -154,7 +154,7 @@ class _MentorViewState extends State<MentorView> with SingleTickerProviderStateM
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: DesignSystem.obsidianBlack,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), border: Border.all(color: DesignSystem.glassBorder)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: BorderSide(color: DesignSystem.glassBorder)),
         title: const Text("Активация", style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: _keyController,

@@ -65,26 +65,6 @@ jobs:
           cd android
           ./gradlew assembleRelease --stacktrace --info > build_logs.txt 2>&1 || (echo "FAILED=true" >> $GITHUB_ENV && exit 1)
 
-      - name: Publish Logs to Git Branch
-        if: failure() || success()
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Force create the branch and push logs
-          git checkout -b debug/build-logs || git checkout debug/build-logs
-          cp android/build_logs.txt build_logs.txt || echo "No logs to copy"
-          git add build_logs.txt || echo "Nothing to add"
-          
-          # Also add the generated wrapper if it exists (for long-term fix)
-          git add android/gradlew android/gradle/wrapper/ || echo "No wrapper to add"
-          
-          git commit -m "debug: build logs and restored wrapper $(date)" || echo "Nothing to commit"
-          git push origin debug/build-logs --force
-          
-          echo "### ❌ Build Failure Logs Pushed" >> $GITHUB_STEP_SUMMARY
-          echo "Logs are available on branch: \`debug/build-logs\`" >> $GITHUB_STEP_SUMMARY
-
       - name: Upload Logs on Failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -92,9 +72,9 @@ jobs:
           name: build-logs
           path: android/build_logs.txt
 
-      - name: Upload APK
+      - name: Upload APK on Success
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: jarvis-android-apk
-          path: build/app/outputs/flutter-apk/*.apk
+          name: jarvis-android-release
+          path: build/app/outputs/flutter-apk/app-release.apk
