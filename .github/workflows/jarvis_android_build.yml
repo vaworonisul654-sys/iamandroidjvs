@@ -70,17 +70,20 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 5 # Ensure file system sync
           
-          # 2. SURGICAL PATCH - Manifest Permissions & Label
+          # 2. RESOLVE DEPENDENCIES (Critical to do AFTER create!)
+          flutter pub get
+          
+          # 3. SURGICAL PATCH - Manifest Permissions & Label
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i '/<uses-permission/d' $MANIFEST
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
           sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' $MANIFEST
           
-          # 3. BUILD WITH REAL EXIT CODE CAPTURE
+          # 4. BUILD WITH REAL EXIT CODE CAPTURE
           flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
           
-          # 4. CAPTURE ARK
+          # 5. CAPTURE APK
           if [ $BUILD_STATUS -eq 0 ]; then
              cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
