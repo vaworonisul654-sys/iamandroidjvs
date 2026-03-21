@@ -59,26 +59,23 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (SDK Native)
+      - name: Build APK (Clean Slate)
         id: build_apk
         run: |
-          # Use tee to see real-time console progress while capturing build_logs.txt
-          flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
+          # 1. PURGE AND REGENERATE
+          rm -rf android/
+          flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           
-          # Force capture any APK produced
-          find . -name "*.apk" -ls
-          find . -name "app-release.apk" -exec cp {} ./app-release.apk \; || echo "No APK found"
-
-      - name: Publish Logs to Git Branch
-        if: failure() || success()
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b debug/build-logs || git checkout debug/build-logs
-          cp build_logs.txt build_logs.txt || echo "No logs to copy"
-          git add build_logs.txt || echo "Nothing to add"
-          git commit -m "debug: SDK-native build logs run #33 $(date)" || echo "Nothing to commit"
-          git push origin debug/build-logs --force
+          # 2. SURGICAL PATCH - Manifest Permissions & Label
+          sed -i '/<uses-permission/d' android/app/src/main/AndroidManifest.xml
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' android/app/src/main/AndroidManifest.xml
+          
+          # 3. BUILD
+          flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols
+          
+          # 4. CAPTURE
+          cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
 
       - name: Upload APK on Success
         if: success()
