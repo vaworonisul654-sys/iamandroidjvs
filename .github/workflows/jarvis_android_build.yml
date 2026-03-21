@@ -63,16 +63,20 @@ jobs:
           ./gradlew assembleRelease --stacktrace --info > build_logs.txt 2>&1 || (echo "FAILED=true" >> $GITHUB_ENV && exit 1)
 
       - name: Publish Logs to Git Branch
-        if: failure()
+        if: failure() || success()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Create branch and add log
-          cp android/build_logs.txt build_logs.txt
+          # Force create the branch and push logs
           git checkout -b debug/build-logs || git checkout debug/build-logs
-          git add build_logs.txt
-          git commit -m "debug: build failure logs $(date)"
+          cp android/build_logs.txt build_logs.txt || echo "No logs to copy"
+          git add build_logs.txt || echo "Nothing to add"
+          
+          # Also add the generated wrapper if it exists (for long-term fix)
+          git add android/gradlew android/gradle/wrapper/ || echo "No wrapper to add"
+          
+          git commit -m "debug: build logs and restored wrapper $(date)" || echo "Nothing to commit"
           git push origin debug/build-logs --force
           
           echo "### ❌ Build Failure Logs Pushed" >> $GITHUB_STEP_SUMMARY
