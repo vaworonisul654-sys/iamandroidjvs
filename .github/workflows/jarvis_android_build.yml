@@ -62,20 +62,35 @@ jobs:
       - name: Build APK (Clean Slate)
         id: build_apk
         run: |
+          set -x
           # 1. PURGE AND REGENERATE
-          rm -rf android/
+          if [ -d "android" ]; then rm -rf android; fi
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           
-          # 2. SURGICAL PATCH - Manifest Permissions & Label
-          sed -i '/<uses-permission/d' android/app/src/main/AndroidManifest.xml
-          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
-          sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' android/app/src/main/AndroidManifest.xml
+          # 2. VERIFY REGENERATION
+          if [ ! -f "android/app/src/main/AndroidManifest.xml" ]; then
+            echo "Regeneration failed! No manifest found."
+            exit 1
+          fi
           
-          # 3. BUILD
+          # 3. SURGICAL PATCH - Manifest Permissions & Label
+          # Use absolute paths and verify each step
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i '/<uses-permission/d' $MANIFEST
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
+          sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' $MANIFEST
+          
+          # 4. BUILD
           flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols
           
-          # 4. CAPTURE
-          cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
+          # 5. CAPTURE
+          # Use find as a fallback if the standard path shifts
+          find build/app/outputs/flutter-apk -name "app-release.apk" -exec cp {} ./app-release.apk \;
+          
+          if [ ! -f "app-release.apk" ]; then
+            echo "APK build failed! app-release.apk not found."
+            exit 1
+          fi
 
       - name: Upload APK on Success
         if: success()
