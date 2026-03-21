@@ -23,69 +23,38 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          # Rollback to 3.19.6 to avoid 3.22.0 Kotlin template bugs
           flutter-version: '3.19.6'
           channel: 'stable'
           cache: true
 
-      - name: System Diagnostics
-        run: |
-          flutter doctor -v
-          ls -la
-          
-      - name: Surgical Android Platform Restoration
-        run: |
-          # Back up modernized scripts
-          cp android/settings.gradle settings.gradle.bak
-          cp android/app/build.gradle build.gradle.bak
-          
-          # Restore missing files
-          flutter create --platforms=android .
-          
-          # Restore optimized scripts
-          mv settings.gradle.bak android/settings.gradle
-          mv build.gradle.bak android/app/build.gradle
-          
-          chmod +x android/gradlew
-
-      - name: Prepare Android Build
-        run: |
-          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
-          
-          if [ ! -f android/app/debug.keystore ]; then
-            keytool -genkey -v -keystore android/app/debug.keystore \
-              -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
-              -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -noprompt
-          fi
-          
-          flutter clean
-          flutter pub get
-
-      - name: Build APK (Surgical Zero-Race)
+      - name: Build APK (Definitive Clean-Slate)
         id: build_apk
         run: |
           set -o pipefail
           set -x
           
-          # 1. CLEAN SLATE
-          rm -rf android/
+          # 1. PURGE AND REGENERATE
+          if [ -d "android" ]; then rm -rf android; fi
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
-          sleep 5 # Ensure file system sync
+          sleep 3
           
-          # 2. RESOLVE DEPENDENCIES (Critical to do AFTER create!)
+          # 2. RESOLVE DEPENDENCIES
           flutter pub get
           
-          # 3. SURGICAL PATCH - Manifest Permissions & Label
+          # 3. SURGICAL PATCH - Manifest & Local Properties
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i '/<uses-permission/d' $MANIFEST
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
           sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' $MANIFEST
           
-          # 4. BUILD WITH REAL EXIT CODE CAPTURE
+          # Ensure local properties see the SDK
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+
+          # 4. BUILD
           flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
           
-          # 5. CAPTURE APK
+          # 5. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
              cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
@@ -101,7 +70,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #39 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #40 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
