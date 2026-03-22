@@ -25,7 +25,7 @@ jobs:
         with:
           flutter-version: 3.10.0
           channel: stable
-      - name: Build APK (SDK Heart Strike Victory)
+      - name: Build APK (Gradle Engine Strike Victory)
         id: build_apk
         run: |
           set -o pipefail
@@ -36,26 +36,21 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 3
           
-          # 2. STRIKE AT THE HEART (Patch the Flutter SDK source)
-          # We recursively replace 16 with 21 in the entire tool source
-          find $FLUTTER_ROOT/packages/flutter_tools -type f -exec sed -i 's/minSdkVersion 16/minSdkVersion 21/g' {} + 2>/dev/null || true
-          find $FLUTTER_ROOT/packages/flutter_tools -type f -exec sed -i 's/minSdkVersion: 16/minSdkVersion: 21/g' {} + 2>/dev/null || true
+          # 2. STRIKE AT THE ENGINE (Patch flutter.gradle in SDK)
+          # We force the internal gradle script to use 21
+          find $FLUTTER_ROOT -name "flutter.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} + 2>/dev/null || true
           
-          # 3. RECOMPILE THE TOOL
-          rm -f $FLUTTER_ROOT/bin/cache/flutter_tools.snapshot
-          flutter --version # Triggers recompile
-          
-          # 4. RESOLVE
+          # 3. RESOLVE
           flutter pub get
           
-          # 5. PROJECT PATCH (The standard)
+          # 4. PROJECT PATCH
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} +
           
-          # 6. BUILD
+          # 5. BUILD
           flutter build apk --release --verbose | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
           
-          # 7. CAPTURE
+          # 6. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
              cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
@@ -85,7 +80,7 @@ jobs:
             🎉 **J.A.R.V.I.S. Android APK is READY!** 🎙️🛰️
             
             This release contains the successfully built Android APK with:
-            - **Flutter SDK "Heart Strike" Patch**
+            - **Flutter SDK "Engine Strike" Patch**
             - **`minSdkVersion 21`** Support
             - **Platform Parity** with the iOS version
           draft: false
