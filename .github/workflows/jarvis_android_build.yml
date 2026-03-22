@@ -27,7 +27,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Build APK (Direct Gradle Victory)
+      - name: Build APK (Clean Start Victory)
         id: build_apk
         run: |
           set -o pipefail
@@ -38,25 +38,27 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name jarvis_android .
           sleep 3
           
-          # 2. RESOLVE
+          # 2. PURGE PERSISTENT LOCK
+          if [ -f "pubspec.lock" ]; then rm pubspec.lock; fi
+          
+          # 3. UPGRADE PUBSPEC FOR MODERN SYNC
+          sed -i 's/camera: .*/camera: ^0.11.0/g' pubspec.yaml
+          sed -i 's/image_picker: .*/image_picker: ^1.1.2/g' pubspec.yaml
+          
+          # 4. RESOLVE FRESH
           flutter pub get
           
-          # 3. PATCH BUILD.GRADLE (Literal 21)
+          # 5. PROJECT PATCH (Literal 21)
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} +
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk [0-9]*/minSdk 21/g' {} +
           
-          # 4. PREBUILD (Needed for Gradle to see the plugins)
-          flutter build apk --release --verbose --no-pub --no-precompiled || true
-          
-          # 5. INVOKE GRADLE DIRECTLY (The Bypass)
-          cd android
-          ./gradlew assembleRelease | tee ../build_logs.txt
+          # 6. BUILD
+          flutter build apk --release --verbose | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
-          cd ..
           
-          # 6. CAPTURE
+          # 7. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
-             cp android/app/build/outputs/apk/release/app-release.apk ./app-release.apk || cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
+             cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
              echo "BUILD_FAILED=true" >> $GITHUB_ENV
              exit $BUILD_STATUS
