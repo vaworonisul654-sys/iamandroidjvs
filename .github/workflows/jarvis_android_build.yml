@@ -27,7 +27,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Build APK (Clean Start Victory)
+      - name: Build APK (Kotlin Lock Victory)
         id: build_apk
         run: |
           set -o pipefail
@@ -38,15 +38,16 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name jarvis_android .
           sleep 3
           
-          # 2. PURGE PERSISTENT LOCK
-          if [ -f "pubspec.lock" ]; then rm pubspec.lock; fi
-          
-          # 3. UPGRADE PUBSPEC FOR MODERN SYNC
+          # 2. UPGRADE PUBSPEC FOR MODERN SYNC
           sed -i 's/camera: .*/camera: ^0.11.0/g' pubspec.yaml
           sed -i 's/image_picker: .*/image_picker: ^1.1.2/g' pubspec.yaml
           
-          # 4. RESOLVE FRESH
+          # 3. RESOLVE
           flutter pub get
+          
+          # 4. KOTLIN LOCK IN BUILD.GRADLE (The real fix)
+          # We force Kotlin 1.9.10 which is needed for modern Flutter 3.24 plugins
+          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.10'/g" android/build.gradle
           
           # 5. PROJECT PATCH (Literal 21)
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} +
