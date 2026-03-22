@@ -33,7 +33,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Root Subprojects Strike)
+      - name: Build APK (Gradle Direct Bypass)
         id: build_apk
         run: |
           set -o pipefail
@@ -44,46 +44,23 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 3
           
-          # 2. PATCH ROOT build.gradle (The Subprojects Override)
-          # This forces 21 on EVERY module (app + all plugins)
-          cat > android/build.gradle <<EOF
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.buildDir = '../build'
-          subprojects {
-              project.buildDir = "\${rootProject.buildDir}/\${project.name}"
-              project.evaluationDependsOn(':app')
-              
-              afterEvaluate { project ->
-                  if (project.hasProperty('android')) {
-                      project.android {
-                          if (it.minSdkVersion != null) {
-                             minSdkVersion 21
-                          }
-                      }
-                  }
-              }
-          }
-          tasks.register("clean", Delete) {
-              delete rootProject.buildDir
-          }
-          EOF
+          # 2. COMPREHENSIVE RECURSIVE PATCH
+          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion[[:space:]]\+[0-9]\+/minSdkVersion 21/g' {} +
+          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk[[:space:]]\+[0-9]\+/minSdk 21/g' {} +
           
-          # 3. PATCH APP build.gradle (Literal 21)
-          find android/app/ -name "build.gradle" -exec sed -i 's/minSdkVersion .*/minSdkVersion 21/g' {} +
-          
-          # 4. RESOLVE AND BUILD
+          # 3. RESOLVE
           flutter pub get
-          flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
+          
+          # 4. BUILD WITH GRADLE DIRECTLY (Bypass Flutter tool checks)
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace | tee ../build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
+          cd ..
           
           # 5. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
-             cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
+             cp android/app/build/outputs/apk/release/app-release.apk ./app-release.apk
           else
              echo "BUILD_FAILED=true" >> $GITHUB_ENV
              exit $BUILD_STATUS
@@ -97,7 +74,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #75 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #76 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
