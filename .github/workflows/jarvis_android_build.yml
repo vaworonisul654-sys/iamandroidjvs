@@ -33,7 +33,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Minimalist Custom Build)
+      - name: Build APK (Literal Hardcoded Build)
         id: build_apk
         run: |
           set -o pipefail
@@ -44,19 +44,15 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 3
           
-          # 2. OVERWRITE WITH DEFINITIVE HARDCODED Groovy
+          # 2. OVERWRITE WITH LITERAL Groovy (Flutter Tool's Regex likes Literals)
           cat > android/app/build.gradle <<EOF
-          def g_minSdkVersion = 21
-          def g_targetSdkVersion = 34
-          def g_compileSdkVersion = 34
-          
           apply plugin: 'com.android.application'
           apply plugin: 'kotlin-android'
           apply from: "\$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
           
           android {
               namespace "com.jarvis.iamandroidjvs"
-              compileSdkVersion g_compileSdkVersion
+              compileSdkVersion 34
           
               sourceSets {
                   main.java.srcDirs += 'src/main/kotlin'
@@ -64,8 +60,8 @@ jobs:
           
               defaultConfig {
                   applicationId "com.jarvis.iamandroidjvs"
-                  minSdkVersion g_minSdkVersion
-                  targetSdkVersion g_targetSdkVersion
+                  minSdkVersion 21
+                  targetSdkVersion 34
                   versionCode flutterVersionCode.toInteger()
                   versionName flutterVersionName
               }
@@ -115,7 +111,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #53 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #54 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
