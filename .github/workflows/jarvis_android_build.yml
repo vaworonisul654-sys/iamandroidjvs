@@ -27,34 +27,63 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Build APK (Project Recovery Victory)
+      - name: Build APK (Total Nuclear Victory)
         id: build_apk
         run: |
           set -o pipefail
           set -x
           
-          # 1. PURGE AND REGENERATE WITH CORRECT NAME
-          # Note: We must use jarvis_android to match the code in lib/
+          # 1. PURGE AND REGENERATE
           if [ -d "android" ]; then rm -rf android; fi
           flutter create --platforms=android --org com.jarvis --project-name jarvis_android .
           sleep 3
           
-          # 2. UPGRADE PUBSPEC FOR MODERN SYNC
-          sed -i 's/camera: .*/camera: ^0.11.0/g' pubspec.yaml
-          sed -i 's/image_picker: .*/image_picker: ^1.1.2/g' pubspec.yaml
-          
-          # 3. RESOLVE
+          # 2. RESOLVE
           flutter pub get
           
-          # 4. PROJECT PATCH
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} +
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk [0-9]*/minSdk 21/g' {} +
+          # 3. TOTAL NUCLEAR BUILD GRADLE (No variables)
+          cat > android/app/build.gradle <<EOF
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+          android {
+              namespace "com.jarvis.jarvis_android"
+              compileSdk 34
+              ndkVersion "25.1.8937393"
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+              defaultConfig {
+                  applicationId "com.jarvis.jarvis_android"
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0.0"
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                      minifyEnabled true
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                  }
+              }
+          }
+          flutter {
+              source '../..'
+          }
+          EOF
           
-          # 5. BUILD
+          # 4. BUILD
           flutter build apk --release --verbose | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
           
-          # 6. CAPTURE
+          # 5. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
              cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
