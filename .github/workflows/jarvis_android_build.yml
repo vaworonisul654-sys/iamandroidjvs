@@ -36,23 +36,36 @@ jobs:
           # 1. PURGE AND REGENERATE
           if [ -d "android" ]; then rm -rf android; fi
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
+          # Force Groovy or Kotlin? Actually, let's just patch whatever exists.
           sleep 3
           
           # 2. RESOLVE DEPENDENCIES
           flutter pub get
           
           # 3. SURGICAL PATCH - Manifest, Local Properties & MinSDK
+          # Path whatever exists in android/app/ (Groovy or Kotlin DSL)
+          GRADLE_GROOVY="android/app/build.gradle"
+          GRADLE_KOTLIN="android/app/build.gradle.kts"
+          
+          # Patch Manifest
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i '/<uses-permission/d' $MANIFEST
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
           sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' $MANIFEST
           
-          # ABSOLUTE HARDCODED MINSDK FIX - NO VARIABLES!
-          GRADLE="android/app/build.gradle"
-          sed -i 's/minSdkVersion .*/minSdkVersion 21/' $GRADLE
-          sed -i 's/minSdk = .*/minSdk = 21/' $GRADLE
-          sed -i 's/targetSdkVersion .*/targetSdkVersion 34/' $GRADLE
-          sed -i 's/compileSdkVersion .*/compileSdkVersion 34/' $GRADLE
+          # Patch Groovy if it exists
+          if [ -f "$GRADLE_GROOVY" ]; then
+            sed -i 's/minSdkVersion .*/minSdkVersion 21/' "$GRADLE_GROOVY"
+            sed -i 's/targetSdkVersion .*/targetSdkVersion 34/' "$GRADLE_GROOVY"
+            sed -i 's/compileSdkVersion .*/compileSdkVersion 34/' "$GRADLE_GROOVY"
+          fi
+          
+          # Patch Kotlin DSL if it exists (KOTLIN DSL uses 'minSdk = 21')
+          if [ -f "$GRADLE_KOTLIN" ]; then
+            sed -i 's/minSdk = .*/minSdk = 21/' "$GRADLE_KOTLIN"
+            sed -i 's/targetSdk = .*/targetSdk = 34/' "$GRADLE_KOTLIN"
+            sed -i 's/compileSdk = .*/compileSdk = 34/' "$GRADLE_KOTLIN"
+          fi
           
           # Ensure local properties see the explicit SDK
           echo "flutter.minSdkVersion=21" >> android/local.properties
@@ -64,10 +77,9 @@ jobs:
           flutter clean
           
           # Verify final result!
-          echo "DEBUG: FINAL build.gradle content for minSdkVersion:"
-          grep -i "SdkVersion" $GRADLE
-          echo "DEBUG: FINAL local.properties content:"
-          cat android/local.properties
+          echo "DEBUG: VERIFYING android/app files:"
+          ls -R android/app/*.gradle*
+          grep -i "Sdk" android/app/*.gradle* || echo "Sdk NOT FOUND"
 
           # 4. BUILD
           flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee -a build_logs.txt
@@ -89,7 +101,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #47 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #48 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
