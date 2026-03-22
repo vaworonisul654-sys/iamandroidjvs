@@ -25,7 +25,7 @@ jobs:
         with:
           flutter-version: 3.10.0
           channel: stable
-      - name: Build APK (Gradle Re-Engineering Victory)
+      - name: Build APK (SDK Heart Strike Victory)
         id: build_apk
         run: |
           set -o pipefail
@@ -36,44 +36,26 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 3
           
-          # 2. RESOLVE
+          # 2. STRIKE AT THE HEART (Patch the Flutter SDK source)
+          # We recursively replace 16 with 21 in the entire tool source
+          find $FLUTTER_ROOT/packages/flutter_tools -type f -exec sed -i 's/minSdkVersion 16/minSdkVersion 21/g' {} + 2>/dev/null || true
+          find $FLUTTER_ROOT/packages/flutter_tools -type f -exec sed -i 's/minSdkVersion: 16/minSdkVersion: 21/g' {} + 2>/dev/null || true
+          
+          # 3. RECOMPILE THE TOOL
+          rm -f $FLUTTER_ROOT/bin/cache/flutter_tools.snapshot
+          flutter --version # Triggers recompile
+          
+          # 4. RESOLVE
           flutter pub get
           
-          # 3. FORCE minSdk 21 via subprojects in root build.gradle
-          cat > android/build.gradle <<EOF
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.buildDir = '../build'
-          subprojects {
-              afterEvaluate { project ->
-                  if (project.hasProperty('android')) {
-                      project.android {
-                          compileSdkVersion 34
-                          defaultConfig {
-                              minSdkVersion 21
-                              targetSdkVersion 34
-                          }
-                      }
-                  }
-              }
-          }
-          tasks.register("clean", Delete) {
-              delete rootProject.buildDir
-          }
-          EOF
+          # 5. PROJECT PATCH (The standard)
+          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} +
           
-          # 4. PATCH APP build.gradle (Literal 21)
-          find android/app/ -name "build.gradle" -exec sed -i 's/minSdkVersion .*/minSdkVersion 21/g' {} +
-          
-          # 5. BUILD
+          # 6. BUILD
           flutter build apk --release --verbose | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
           
-          # 6. CAPTURE
+          # 7. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
              cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
@@ -103,9 +85,9 @@ jobs:
             🎉 **J.A.R.V.I.S. Android APK is READY!** 🎙️🛰️
             
             This release contains the successfully built Android APK with:
-            - **Gradle Re-Engineering** (Subprojects Override)
-            - **Flutter 3.10.0 (Legacy Stable)**
+            - **Flutter SDK "Heart Strike" Patch**
             - **`minSdkVersion 21`** Support
+            - **Platform Parity** with the iOS version
           draft: false
           prerelease: false
         env:
