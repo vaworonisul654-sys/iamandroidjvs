@@ -23,7 +23,7 @@ jobs:
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.24.5
+          flutter-version: 3.10.0
           channel: stable
           cache: true
 
@@ -32,7 +32,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Stable Nexus Victory)
+      - name: Build APK (Golden Age Victory)
         id: build_apk
         run: |
           set -o pipefail
@@ -46,19 +46,14 @@ jobs:
           # 2. RESOLVE
           flutter pub get
           
-          # 3. HOME ROOT TOTAL WAR (Patch every gradle file in $HOME)
-          # This catches plugins, templates, and cached configs
-          find $HOME -name "*.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} + 2>/dev/null || true
+          # 3. LEGACY PATCH
+          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} +
           
-          # 4. PROJECT DUAL SYNTAX PATCH
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion[[:space:]]\+[0-9]\+/minSdkVersion 21/g' {} +
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk[[:space:]]\+[0-9]\+/minSdk 21/g' {} +
-          
-          # 5. BUILD
-          flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
+          # 4. BUILD
+          flutter build apk --release --verbose | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
           
-          # 6. CAPTURE
+          # 5. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
              cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
@@ -88,11 +83,9 @@ jobs:
             🎉 **J.A.R.V.I.S. Android APK is READY!** 🎙️🛰️
             
             This release contains the successfully built Android APK with:
-            - **`minSdkVersion 21`** Support (Camera/Gallery parity)
+            - **Flutter 3.10.0 (Legacy Stable)**
+            - **`minSdkVersion 21`** Support
             - **Platform Parity** with the iOS version
-            - **Premium Design** (Outfit font, Emerald/Navy theme)
-            
-            Download the `app-release.apk` below! 🚀
           draft: false
           prerelease: false
         env:
