@@ -77,6 +77,27 @@ jobs:
           git commit -m "debug: build logs Run #76 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v1
+        with:
+          files: app-release.apk
+          tag_name: v1.0.${{ github.run_number }}
+          name: J.A.R.V.I.S. Android Release ${{ github.run_number }}
+          body: |
+            🎉 **J.A.R.V.I.S. Android APK is READY!** 🎙️🛰️
+            
+            This release contains the successfully built Android APK with:
+            - **`minSdkVersion 21`** Support (Camera/Gallery parity)
+            - **Platform Parity** with the iOS version
+            - **Premium Design** (Outfit font, Emerald/Navy theme)
+            
+            Download the `app-release.apk` below! 🚀
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload APK on Success
         if: success()
         uses: actions/upload-artifact@v4
