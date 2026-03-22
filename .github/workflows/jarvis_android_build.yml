@@ -47,19 +47,19 @@ jobs:
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
           sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' $MANIFEST
           
-          # Aggressive Robust Fix MinSDK for Camera Plugin (must be 21+)
+          # TOTAL HARDCODED OVERRIDE - NO VARIABLES!
           GRADLE="android/app/build.gradle"
-          # Multi-layered approach: set explicitly in local.properties AND patch build.gradle
-          echo "flutter.minSdkVersion=21" >> android/local.properties
           sed -i 's/minSdkVersion .*/minSdkVersion 21/' $GRADLE
-          sed -i 's/minSdk = .*/minSdk = 21/' $GRADLE
+          sed -i 's/targetSdkVersion .*/targetSdkVersion 34/' $GRADLE
+          sed -i 's/compileSdkVersion .*/compileSdkVersion 34/' $GRADLE
           
-          # Ensure local properties see the SDK
+          # Ensure local properties see the SDK (Just in case)
+          echo "flutter.minSdkVersion=21" >> android/local.properties
           echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
 
           # Verify final result!
           echo "DEBUG: FINAL build.gradle content for minSdkVersion:"
-          grep -i "minSdk" $GRADLE
+          grep -i "SdkVersion" $GRADLE
           echo "DEBUG: FINAL local.properties content:"
           cat android/local.properties
 
@@ -83,7 +83,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #45 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #46 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
