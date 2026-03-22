@@ -33,27 +33,25 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Properties Saturation)
+      - name: Build APK (SDK Script Strike)
         id: build_apk
         run: |
           set -o pipefail
           set -x
           
-          # 1. PURGE AND REGENERATE
+          # 1. STRIKE AT THE INTERNAL SCRIPTS (Patch the SDK's build logic)
+          FLUTTER_GRADLE="$FLUTTER_ROOT/packages/flutter_tools/gradle/flutter.gradle"
+          if [ -f "$FLUTTER_GRADLE" ]; then
+             sed -i 's/minSdkVersion .*/minSdkVersion 21/g' "$FLUTTER_GRADLE"
+             sed -i 's/minSdk = .*/minSdk = 21/g' "$FLUTTER_GRADLE"
+          fi
+          
+          # 2. PURGE AND REGENERATE
           if [ -d "android" ]; then rm -rf android; fi
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
-          # Wait for creation
           sleep 3
           
-          # 2. SATURATE local.properties
-          LP="android/local.properties"
-          echo "flutter.minSdkVersion=21" >> $LP
-          echo "minSdkVersion=21" >> $LP
-          echo "minSdk=21" >> $LP
-          echo "flutter.targetSdkVersion=34" >> $LP
-          echo "flutter.compileSdkVersion=34" >> $LP
-          
-          # 3. RECURSIVE LITERAL PATCH
+          # 3. RECURSIVE PROJECT PATCH
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion .*/minSdkVersion 21/g' {} +
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk .*/minSdk 21/g' {} +
           
@@ -78,7 +76,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #62 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #63 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
