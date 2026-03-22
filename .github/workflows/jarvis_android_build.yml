@@ -27,26 +27,26 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Build APK (Modern Standard Victory)
+      - name: Build APK (Project Recovery Victory)
         id: build_apk
         run: |
           set -o pipefail
           set -x
           
-          # 1. PURGE AND REGENERATE
+          # 1. PURGE AND REGENERATE WITH CORRECT NAME
+          # Note: We must use jarvis_android to match the code in lib/
           if [ -d "android" ]; then rm -rf android; fi
-          flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
+          flutter create --platforms=android --org com.jarvis --project-name jarvis_android .
           sleep 3
           
           # 2. UPGRADE PUBSPEC FOR MODERN SYNC
-          # We force the latest camera which defaults to 21
           sed -i 's/camera: .*/camera: ^0.11.0/g' pubspec.yaml
           sed -i 's/image_picker: .*/image_picker: ^1.1.2/g' pubspec.yaml
           
           # 3. RESOLVE
           flutter pub get
           
-          # 4. PROJECT PATCH (The standard)
+          # 4. PROJECT PATCH
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} +
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk [0-9]*/minSdk 21/g' {} +
           
