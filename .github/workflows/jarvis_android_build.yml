@@ -33,7 +33,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Regex Overdrive 3.22.0)
+      - name: Build APK (Global Cache Strike)
         id: build_apk
         run: |
           set -o pipefail
@@ -42,31 +42,25 @@ jobs:
           # 1. PURGE AND REGENERATE
           if [ -d "android" ]; then rm -rf android; fi
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
-          # Wait for creation to finish
           sleep 3
           
-          # 2. COMPREHENSIVE REGEX PATCH (Covers all syntax variations)
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -print0 | xargs -0 sed -i 's/minSdkVersion[[:space:]]\+[0-9]\+/minSdkVersion 21/g'
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -print0 | xargs -0 sed -i 's/minSdk[[:space:]]\+[0-9]\+/minSdk 21/g'
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -print0 | xargs -0 sed -i 's/minSdk[[:space:]]*=[[space:]]*[0-9]\+/minSdk = 21/g'
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -print0 | xargs -0 sed -i 's/minSdkVersion[[:space:]]*=[[space:]]*[0-9]\+/minSdkVersion = 21/g'
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -print0 | xargs -0 sed -i 's/minSdkVersion[[:space:]]\+flutter.minSdkVersion/minSdkVersion 21/g'
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -print0 | xargs -0 sed -i 's/minSdk[[:space:]]\+flutter.minSdkVersion/minSdk 21/g'
-          
-          # 3. ROOT PROPERTIES PATCH
-          LP="android/local.properties"
-          if [ -f "$LP" ]; then
-             echo "flutter.minSdkVersion=21" >> $LP
-             echo "minSdkVersion=21" >> $LP
-             echo "minSdk=21" >> $LP
-          fi
-
-          # 4. RESOLVE AND BUILD
+          # 2. RESOLVE TO CACHE
           flutter pub get
+          
+          # 3. STRIKE AT THE CACHE (Find pub cache and patch)
+          # Flutter SDK usually keeps the cache in $FLUTTER_ROOT/.pub-cache or ~/.pub-cache
+          find $HOME/.pub-cache -name "*.gradle" -exec sed -i 's/minSdkVersion 16/minSdkVersion 21/g' {} + 2>/dev/null || true
+          find $FLUTTER_ROOT/.pub-cache -name "*.gradle" -exec sed -i 's/minSdkVersion 16/minSdkVersion 21/g' {} + 2>/dev/null || true
+          
+          # 4. PATCH PROJECT AGAIN (Covers all syntax variations)
+          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion[[:space:]]\+[0-9]\+/minSdkVersion 21/g' {} +
+          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk[[:space:]]\+[0-9]\+/minSdk 21/g' {} +
+          
+          # 5. BUILD
           flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
           
-          # 5. CAPTURE
+          # 6. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
              cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
@@ -82,7 +76,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #64 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #65 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
