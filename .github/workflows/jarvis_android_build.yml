@@ -33,7 +33,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Cache Purge Overdrive)
+      - name: Build APK (Standard Template Enforcement)
         id: build_apk
         run: |
           set -o pipefail
@@ -44,19 +44,61 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 3
           
-          # 2. PURGE CACHE (Literal Force)
-          flutter pub cache clean --force
+          # 2. OVERWRITE WITH VERIFIED STANDARD GROOVY
+          cat > android/app/build.gradle <<EOF
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+          
+          android {
+              namespace "com.jarvis.iamandroidjvs"
+              compileSdk 34
+          
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+          
+              kotlinOptions {
+                  jvmTarget = "1.8"
+              }
+          
+              defaultConfig {
+                  applicationId "com.jarvis.iamandroidjvs"
+                  minSdk 21
+                  targetSdk 34
+                  versionCode flutterVersionCode.toInteger()
+                  versionName flutterVersionName
+              }
+          
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                  }
+              }
+          }
+          
+          flutter {
+              source '../..'
+          }
+          EOF
+          
+          # 3. PATCH MANIFEST
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i '/<uses-permission/d' $MANIFEST
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
+          sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' $MANIFEST
+          
+          # 4. RESOLVE DEPENDENCIES
           flutter pub get
           
-          # 3. RECURSIVE BRUTE FORCE PATCH
-          find android/ -name "*.gradle*" -exec sed -i 's/minSdkVersion .*/minSdkVersion 21/g' {} +
-          find android/ -name "*.gradle*" -exec sed -i 's/minSdk = .*/minSdk = 21/g' {} +
-          
-          # 4. BUILD
+          # 5. BUILD
           flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
           
-          # 5. CAPTURE
+          # 6. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
              cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
@@ -72,7 +114,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #56 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #57 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
