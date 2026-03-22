@@ -33,26 +33,25 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Fresh Nexus Subdirectory)
+      - name: Build APK (ToolCache Strike)
         id: build_apk
         run: |
           set -o pipefail
           set -x
           
-          # 1. CREATE FRESH SUBDIRECTORY (Avoid environmental cache)
-          mkdir fresh_jarvis
-          cd fresh_jarvis
-          
-          # 2. CREATE PROJECT
+          # 1. PURGE AND REGENERATE
+          if [ -d "android" ]; then rm -rf android; fi
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
-          # Overwrite pubspec to get the real app code
-          cp -r ../lib .
-          cp ../pubspec.yaml .
+          # Wait for creation to finish
+          sleep 3
+          
+          # 2. STRIKE AT THE HOSTED TOOLCACHE (The ultimate source)
+          # Many dependencies are stored in the hostedtoolcache
+          sudo find /opt/hostedtoolcache/flutter -name "*.gradle" -exec sed -i 's/minSdkVersion 16/minSdkVersion 21/g' {} + 2>/dev/null || true
           
           # 3. COMPREHENSIVE RECURSIVE PATCH
-          find . -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion[[:space:]]\+[0-9]\+/minSdkVersion 21/g' {} +
-          find . -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk[[:space:]]\+[0-9]\+/minSdk 21/g' {} +
-          find . -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk[[:space:]]*=[[:space:]]*[0-9]\+/minSdk = 21/g' {} +
+          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion[[:space:]]\+[0-9]\+/minSdkVersion 21/g' {} +
+          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk[[:space:]]\+[0-9]\+/minSdk 21/g' {} +
           
           # 4. RESOLVE AND BUILD
           flutter pub get
@@ -61,9 +60,8 @@ jobs:
           
           # 5. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
-             cp build/app/outputs/flutter-apk/app-release.apk ../app-release.apk
+             cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
-             cp build_logs.txt ../build_logs.txt
              echo "BUILD_FAILED=true" >> $GITHUB_ENV
              exit $BUILD_STATUS
           fi
@@ -76,7 +74,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #66 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #67 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
