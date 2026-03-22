@@ -33,7 +33,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Local Plugin Injection)
+      - name: Build APK (Plugin Pubspec Strike)
         id: build_apk
         run: |
           set -o pipefail
@@ -45,18 +45,17 @@ jobs:
           sleep 3
           
           # 2. DOWNLOAD PLUGIN SOURCE
-          # Note: We specifically clone the camera plugin source
           git clone --depth 1 --filter=blob:none --sparse https://github.com/flutter/packages.git flutter_packages
           cd flutter_packages
           git sparse-checkout set packages/camera/camera_android
           cd ..
           
-          # 3. PATCH PLUGIN SOURCE
-          # Strike at the source of the pre-flight error
+          # 3. PATCH PLUGIN SOURCE (GRADLE + PUBSPEC)
+          # Some newer plugins store minSdkVersion in pubspec.yaml too
           find flutter_packages/ -name "*.gradle" -exec sed -i 's/minSdkVersion 16/minSdkVersion 21/g' {} + 2>/dev/null || true
+          find flutter_packages/ -name "pubspec.yaml" -exec sed -i 's/minSdkVersion: [0-9]*/minSdkVersion: 21/g' {} + 2>/dev/null || true
           
-          # 4. INJECT LOCAL PATH INTO pubspec.yaml
-          # We force the app to use our patched local copy
+          # 4. INJECT LOCAL PATH
           sed -i 's/camera: .*/camera:\n    path: .\/flutter_packages\/packages\/camera\/camera_android/g' pubspec.yaml
           
           # 5. DUAL SYNTAX PROJECT PATCH
@@ -84,7 +83,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #71 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #72 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
