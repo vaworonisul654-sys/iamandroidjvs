@@ -33,7 +33,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Plugin Pubspec Strike)
+      - name: Build APK (Camera Total War)
         id: build_apk
         run: |
           set -o pipefail
@@ -44,19 +44,18 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 3
           
-          # 2. DOWNLOAD PLUGIN SOURCE
+          # 2. DOWNLOAD ENTIRE PACKAGES REPO (Sparse but covering camera)
           git clone --depth 1 --filter=blob:none --sparse https://github.com/flutter/packages.git flutter_packages
           cd flutter_packages
-          git sparse-checkout set packages/camera/camera_android
+          git sparse-checkout set packages/camera
           cd ..
           
-          # 3. PATCH PLUGIN SOURCE (GRADLE + PUBSPEC)
-          # Some newer plugins store minSdkVersion in pubspec.yaml too
-          find flutter_packages/ -name "*.gradle" -exec sed -i 's/minSdkVersion 16/minSdkVersion 21/g' {} + 2>/dev/null || true
-          find flutter_packages/ -name "pubspec.yaml" -exec sed -i 's/minSdkVersion: [0-9]*/minSdkVersion: 21/g' {} + 2>/dev/null || true
+          # 3. TOTAL WAR PATCH (Gradle + Pubspec across the entire camera tree)
+          find flutter_packages/packages/camera -name "*.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} + 2>/dev/null || true
+          find flutter_packages/packages/camera -name "pubspec.yaml" -exec sed -i 's/minSdkVersion: [0-9]*/minSdkVersion: 21/g' {} + 2>/dev/null || true
           
-          # 4. INJECT LOCAL PATH
-          sed -i 's/camera: .*/camera:\n    path: .\/flutter_packages\/packages\/camera\/camera_android/g' pubspec.yaml
+          # 4. INJECT LOCAL PATH (Target the parent camera package)
+          sed -i 's/camera: .*/camera:\n    path: .\/flutter_packages\/packages\/camera\/camera/g' pubspec.yaml
           
           # 5. DUAL SYNTAX PROJECT PATCH
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion[[:space:]]\+[0-9]\+/minSdkVersion 21/g' {} +
@@ -83,7 +82,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #72 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #73 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
