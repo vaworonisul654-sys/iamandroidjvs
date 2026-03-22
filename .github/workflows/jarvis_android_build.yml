@@ -23,9 +23,11 @@ jobs:
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.10.0
+          flutter-version: 3.24.5
           channel: stable
-      - name: Build APK (Manifest Total War Victory)
+          cache: true
+
+      - name: Build APK (Modern Standard Victory)
         id: build_apk
         run: |
           set -o pipefail
@@ -36,15 +38,17 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 3
           
-          # 2. RESOLVE
+          # 2. UPGRADE PUBSPEC FOR MODERN SYNC
+          # We force the latest camera which defaults to 21
+          sed -i 's/camera: .*/camera: ^0.11.0/g' pubspec.yaml
+          sed -i 's/image_picker: .*/image_picker: ^1.1.2/g' pubspec.yaml
+          
+          # 3. RESOLVE
           flutter pub get
           
-          # 3. MANIFEST TOTAL WAR (Patch every manifest in $HOME and project)
-          # We force 21 in the binary metadata
-          find $HOME -name "AndroidManifest.xml" -exec sed -i 's/android:minSdkVersion="[0-9]*"/android:minSdkVersion="21"/g' {} + 2>/dev/null || true
-          
-          # 4. PROJECT GRADLE PATCH
+          # 4. PROJECT PATCH (The standard)
           find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} +
+          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdk [0-9]*/minSdk 21/g' {} +
           
           # 5. BUILD
           flutter build apk --release --verbose | tee build_logs.txt
@@ -80,7 +84,8 @@ jobs:
             🎉 **J.A.R.V.I.S. Android APK is READY!** 🎙️🛰️
             
             This release contains the successfully built Android APK with:
-            - **`AndroidManifest.xml` Total War Patch**
+            - **Flutter 3.24.5 (Latest Stable)**
+            - **Modern Plugins** (^0.11.0 camera)
             - **`minSdkVersion 21`** Support
             - **Platform Parity** with the iOS version
           draft: false
