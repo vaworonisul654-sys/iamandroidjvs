@@ -47,16 +47,22 @@ jobs:
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
           sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' $MANIFEST
           
-          # TOTAL HARDCODED OVERRIDE - NO VARIABLES!
+          # ABSOLUTE HARDCODED MINSDK FIX - NO VARIABLES!
           GRADLE="android/app/build.gradle"
           sed -i 's/minSdkVersion .*/minSdkVersion 21/' $GRADLE
+          sed -i 's/minSdk = .*/minSdk = 21/' $GRADLE
           sed -i 's/targetSdkVersion .*/targetSdkVersion 34/' $GRADLE
           sed -i 's/compileSdkVersion .*/compileSdkVersion 34/' $GRADLE
           
-          # Ensure local properties see the SDK (Just in case)
+          # Ensure local properties see the explicit SDK
           echo "flutter.minSdkVersion=21" >> android/local.properties
+          echo "flutter.targetSdkVersion=34" >> android/local.properties
+          echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
 
+          # CLEAN AGAIN TO ENSURE GRADLE SEES THE CHANGES
+          flutter clean
+          
           # Verify final result!
           echo "DEBUG: FINAL build.gradle content for minSdkVersion:"
           grep -i "SdkVersion" $GRADLE
@@ -83,7 +89,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #46 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #47 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
