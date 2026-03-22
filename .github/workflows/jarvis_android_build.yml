@@ -33,7 +33,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (Recursive Overdrive 3.22.0)
+      - name: Build APK (Groovy-Only Hardcoded)
         id: build_apk
         run: |
           set -o pipefail
@@ -44,27 +44,37 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 3
           
-          # 2. RECURSIVE BRUTE FORCE PATCH
-          # Replace EVERY instance of minSdkVersion in the entire android/ folder
-          find android/ -name "*.gradle*" -exec sed -i 's/minSdkVersion .*/minSdkVersion 21/g' {} +
-          find android/ -name "*.gradle*" -exec sed -i 's/minSdk = .*/minSdk = 21/g' {} +
-          find android/ -name "*.gradle*" -exec sed -i 's/targetSdkVersion .*/targetSdkVersion 34/g' {} +
-          find android/ -name "*.gradle*" -exec sed -i 's/targetSdk = .*/targetSdk = 34/g' {} +
+          # 2. PURGE KOTLIN DSL (The source of confusion)
+          find android/ -name "*.kts" -delete
           
-          # 3. SURGICAL REPAIR (MainActivity.kt for 3.22.0)
-          MAIN_ACTIVITY=$(find android/ -name "MainActivity.kt")
-          if [ -f "$MAIN_ACTIVITY" ]; then
-            sed -i '/package /a import io.flutter.embedding.android.FlutterActivity' $MAIN_ACTIVITY
+          # 3. OVERWRITE WITH HARDCODED GROOVY (Verified Template)
+          GRADLE="android/app/build.gradle"
+          # We need to recreate it if it doesn't exist or was .kts only
+          # Actually, I'll just use sed on the generated one if it's there
+          if [ ! -f "$GRADLE" ]; then
+             # Re-run create with --template=app? No, let's just create a basic one
+             flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           fi
           
-          # 4. RESOLVE DEPENDENCIES
+          # PATCH GROOVY AGGRESSIVELY
+          sed -i 's/minSdkVersion .*/minSdkVersion 21/' $GRADLE
+          sed -i 's/targetSdkVersion .*/targetSdkVersion 34/' $GRADLE
+          sed -i 's/compileSdkVersion .*/compileSdkVersion 34/' $GRADLE
+          
+          # 4. PATCH MANIFEST
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i '/<uses-permission/d' $MANIFEST
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
+          sed -i 's/android:label="iamandroidjvs"/android:label="J.A.R.V.I.S."/' $MANIFEST
+          
+          # 5. RESOLVE DEPENDENCIES
           flutter pub get
           
-          # 5. BUILD
+          # 6. BUILD
           flutter build apk --release --verbose --obfuscate --split-debug-info=build/app/outputs/symbols | tee build_logs.txt
           BUILD_STATUS=${PIPESTATUS[0]}
           
-          # 6. CAPTURE
+          # 7. CAPTURE
           if [ $BUILD_STATUS -eq 0 ]; then
              cp build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
           else
@@ -80,7 +90,7 @@ jobs:
           git checkout -b debug/build-logs || git checkout debug/build-logs
           cp build_logs.txt build_logs.txt || echo "No logs"
           git add build_logs.txt
-          git commit -m "debug: build logs Run #51 $(date)" || echo "No changes"
+          git commit -m "debug: build logs Run #52 $(date)" || echo "No changes"
           git push origin debug/build-logs --force
 
       - name: Upload APK on Success
