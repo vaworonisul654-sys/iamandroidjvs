@@ -25,14 +25,7 @@ jobs:
         with:
           flutter-version: 3.10.0
           channel: stable
-          cache: true
-
-      - name: Prepare Android Build
-        run: |
-          flutter clean
-          flutter pub get
-
-      - name: Build APK (Lock Purge Victory)
+      - name: Build APK (Gradle Re-Engineering Victory)
         id: build_apk
         run: |
           set -o pipefail
@@ -43,14 +36,38 @@ jobs:
           flutter create --platforms=android --org com.jarvis --project-name iamandroidjvs .
           sleep 3
           
-          # 2. PURGE PERSISTENT LOCK (The real culprit)
-          if [ -f "pubspec.lock" ]; then rm pubspec.lock; fi
-          
-          # 3. FRESH RESOLVE
+          # 2. RESOLVE
           flutter pub get
           
-          # 4. LEGACY PATCH
-          find android/ -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} +
+          # 3. FORCE minSdk 21 via subprojects in root build.gradle
+          cat > android/build.gradle <<EOF
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.buildDir = '../build'
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      project.android {
+                          compileSdkVersion 34
+                          defaultConfig {
+                              minSdkVersion 21
+                              targetSdkVersion 34
+                          }
+                      }
+                  }
+              }
+          }
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
+          
+          # 4. PATCH APP build.gradle (Literal 21)
+          find android/app/ -name "build.gradle" -exec sed -i 's/minSdkVersion .*/minSdkVersion 21/g' {} +
           
           # 5. BUILD
           flutter build apk --release --verbose | tee build_logs.txt
@@ -86,10 +103,9 @@ jobs:
             🎉 **J.A.R.V.I.S. Android APK is READY!** 🎙️🛰️
             
             This release contains the successfully built Android APK with:
-            - **`pubspec.lock` Purged** (Total dependency reset)
-            - **Flutter 3.10.0 (The Golden Age)**
+            - **Gradle Re-Engineering** (Subprojects Override)
+            - **Flutter 3.10.0 (Legacy Stable)**
             - **`minSdkVersion 21`** Support
-            - **Platform Parity** with the iOS version
           draft: false
           prerelease: false
         env:
